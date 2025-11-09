@@ -2,30 +2,26 @@
 
 import argparse
 import logging
-# +++ NEW IMPORT +++
 import re
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import List  # +++ NEW IMPORT +++
+from typing import List
 
 import mastodon_finder.config as config
 import mastodon_finder.discovery as discovery
 import mastodon_finder.enrich as enrich
 import mastodon_finder.llm_runner as llm_runner
-# +++ NEW IMPORT +++
 import mastodon_finder.mastodon_client as mastodon_client
 import mastodon_finder.prompt_builder as prompt_builder
 import mastodon_finder.report as report
 from mastodon_finder.config import MINIMUM_POSTS
-# +++ NEW IMPORT +++
 from mastodon_finder.enrich import AccountDossier
 
 log = logging.getLogger(__name__)
 
 
-# +++ NEW FILTERING FUNCTION +++
 def _pre_llm_filter(
-        dossiers: List[AccountDossier], args: argparse.Namespace
+    dossiers: List[AccountDossier], args: argparse.Namespace
 ) -> List[AccountDossier]:
     """Applies all pre-LLM filtering rules based on CLI args."""
     log.info(f"Applying pre-LLM filters to {len(dossiers)} dossiers...")
@@ -47,22 +43,25 @@ def _pre_llm_filter(
             log.info(f"Skipping {d.acct}: Account is marked as a bot.")
             continue
 
-
         # Filter 3: Language Filter (--language)
         lang_filter = args.language.lower()
-        if lang_filter != 'none':
+        if lang_filter != "none":
             # Get all non-None languages detected in recent posts
             post_langs = {lang for _, _, lang in d.recent_posts if lang}
             if not post_langs:
                 log.info(f"Skipping {d.acct}: Could not detect language in any posts.")
                 continue
             if lang_filter not in post_langs:
-                log.info(f"Skipping {d.acct}: No posts detected in '{lang_filter}'. Found: {post_langs}")
+                log.info(
+                    f"Skipping {d.acct}: No posts detected in '{lang_filter}'. Found: {post_langs}"
+                )
                 continue
 
         # Filter 4: No Replies Filter (--filter-replies)
         if args.filter_replies and d.reply_posts_found == 0:
-            log.info(f"Skipping {d.acct}: No replies found in recent {args.max_statuses} statuses.")
+            log.info(
+                f"Skipping {d.acct}: No replies found in recent {args.max_statuses} statuses."
+            )
             continue
 
         # Filter 5: Link-Only Filter (--filter-link-only)
@@ -70,18 +69,22 @@ def _pre_llm_filter(
             link_post_count = 0
             total_posts = len(d.recent_posts)
             for _, post_text, _ in d.recent_posts:
-                if re.search(r'https?://', post_text):
+                if re.search(r"https?://", post_text):
                     link_post_count += 1
 
             if total_posts > 0:
                 link_ratio = link_post_count / total_posts
                 if link_ratio >= config.LINK_ONLY_THRESHOLD:
-                    log.info(f"Skipping {d.acct}: Posts are {link_ratio * 100:.0f}% links (>= threshold).")
+                    log.info(
+                        f"Skipping {d.acct}: Posts are {link_ratio * 100:.0f}% links (>= threshold)."
+                    )
                     continue
 
         # Filter 6: not enough original posts
-        if len(d.recent_posts)<MINIMUM_POSTS:
-            log.info(f"Skipping {d.acct}: Not enough posts, needed {MINIMUM_POSTS}, found {len(d.recent_posts)}.")
+        if len(d.recent_posts) < MINIMUM_POSTS:
+            log.info(
+                f"Skipping {d.acct}: Not enough posts, needed {MINIMUM_POSTS}, found {len(d.recent_posts)}."
+            )
             continue
 
         # Filter 7: not enough original posts
@@ -114,7 +117,6 @@ def main():
         help="List of hashtags (without #) to search for.",
     )
 
-    # +++ NEW: Profile search arguments +++
     parser.add_argument(
         "--profile-keywords",
         nargs="+",
@@ -159,7 +161,6 @@ def main():
         help="Skip accounts with no original posts in this many days.",
     )
 
-    # +++ NEW CLI ARGUMENTS +++
     parser.add_argument(
         "--filter-bots",
         dest="filter_bots",
@@ -225,12 +226,13 @@ def main():
     # not when modules are imported for testing.
     config.validate_config()
 
-    # --- +++ NEW: Fetch Following List +++ ---
     # This is the first call, triggers client init
     try:
         log.info("Fetching list of accounts you already follow...")
         following_ids = mastodon_client.get_my_following_ids()
-        log.info(f"Found {len(following_ids)} accounts you follow. These will be skipped.")
+        log.info(
+            f"Found {len(following_ids)} accounts you follow. These will be skipped."
+        )
     except ConnectionError as e:
         # Handle connection error during friend fetch
         log.error(f"Application failed to start: {e}")
@@ -246,26 +248,24 @@ def main():
     log.info("--- Starting mastodon-finder ---")
     log.info(f"Post Keywords: {args.keywords}")
     log.info(f"Post Hashtags: {args.hashtags}")
-    # +++ NEW: Log profile terms +++
     log.info(f"Profile Keywords: {args.profile_keywords}")
     log.info(f"Profile Hashtags: {args.profile_hashtags}")
     log.info(f"LLM Topics: {args.topics}")
 
     try:
         # 1. Discovery Phase
-        # +++ MODIFIED: Pass new args +++
         candidates = discovery.discover_accounts(
             args.keywords,
             args.hashtags,
             args.profile_keywords,
             args.profile_hashtags,
-            args.max_pages
+            args.max_pages,
         )
         if not candidates:
             log.info("No candidates found. Exiting.")
             return
 
-        # --- +++ NEW: Filter Already Followed +++ ---
+        # --- Filter Already Followed ---
         filtered_candidates = {}
         skipped_count = 0
         for account_id, reasons in candidates.items():

@@ -11,13 +11,28 @@ MASTODON_BASE_URL = os.getenv("MASTODON_BASE_URL")
 MASTODON_ACCESS_TOKEN = os.getenv("MASTODON_ACCESS_TOKEN")
 
 # --- Discovery Terms (Defaults) ---
-DEFAULT_KEYWORDS = ["software developer", "computer engineer", "coder", "hacker", "webdev", "devops"]
-DEFAULT_HASHTAGS = ["virginia", "maryland", "DC"]
-DEFAULT_TOPICS = ["software developer in DC, Maryland, Virginia", "python computer engineer in DC, Maryland, Virginia"]
+DEFAULT_KEYWORDS = [
+    "software developer",
+    "computer engineer",
+    "coder",
+    "hacker",
+    "webdev",
+    "devops",
+]
+DEFAULT_HASHTAGS = ["sciFi", "scienceFiction"]
+DEFAULT_TOPICS = [
+    "software developer and scifi fan",
+    "python computer engineer and scifi fan",
+]
 
-# +++ NEW: Profile search terms +++
-DEFAULT_PROFILE_KEYWORDS =  ["software developer", "computer engineer", "coder", "hacker"]
-DEFAULT_PROFILE_HASHTAGS = ["virginia", "maryland", "DC"]
+# --- Profile search terms ---
+DEFAULT_PROFILE_KEYWORDS = [
+    "software developer",
+    "computer engineer",
+    "coder",
+    "hacker",
+]
+DEFAULT_PROFILE_HASHTAGS = ["sciFi", "scienceFiction"]
 
 # --- Fetch Limits (Defaults) ---
 # Max accounts to process in a single run
@@ -64,7 +79,7 @@ LLM_TEMPERATURE = 0.5
 LLM_TIMEOUT = 30  # seconds
 
 
-def validate_config():
+def validate_config() -> None:
     """
     Validates that required environment variables are set.
     Called by the main CLI entry point, not on import.

@@ -14,10 +14,11 @@ log = logging.getLogger(__name__)
 Decision = Literal["FOLLOW", "MAYBE", "SKIP", "ERROR"]
 DECISION_TOKENS = ("FOLLOW", "MAYBE", "SKIP", "ERROR")
 
+
 @dataclass
 class EvaluationResult:
     dossier: AccountDossier
-    decision: Decision
+    decision: str
     reasoning: str
 
 
@@ -162,8 +163,8 @@ def parse_llm_output(dossier: "AccountDossier", output: str) -> "EvaluationResul
     if token_match:
         decision = token_match.group(1).upper()
         # reasoning = everything except the first occurrence of the token
-        before = raw[:token_match.start()].strip()
-        after = raw[token_match.end():].strip()
+        before = raw[: token_match.start()].strip()
+        after = raw[token_match.end() :].strip()
         if before or after:
             reasoning_parts = []
             if before:

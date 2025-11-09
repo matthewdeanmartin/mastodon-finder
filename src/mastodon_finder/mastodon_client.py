@@ -1,18 +1,18 @@
 import hashlib
 import json
 import logging
-# +++ NEW IMPORT +++
 import pickle
 import sys
 from functools import lru_cache
 from pathlib import Path
-# +++ MODIFIED: Added Set +++
 from typing import Any, List, Optional, Set
 
-import mastodon
-import mastodon.return_types
-from mastodon import (Mastodon, MastodonAPIError, MastodonNetworkError,
-                      MastodonRatelimitError)
+from mastodon import (
+    Mastodon,
+    MastodonAPIError,
+    MastodonNetworkError,
+    MastodonRatelimitError,
+)
 
 import mastodon_finder.config as config
 
@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 # --- Caching Setup ---
 CACHE_ENABLED = True
-# +++ MODIFIED: Define both cache directories +++
 CACHE_DIR = Path(".cache")
 CACHE_ME_DIR = Path(".cache_me")
 CACHE_DIR.mkdir(exist_ok=True)
@@ -40,7 +39,6 @@ def _get_cache_key(func_name: str, *args: Any, **kwargs: Any) -> str:
     return hashlib.md5(key_str.encode()).hexdigest()
 
 
-# +++ MODIFIED: Use pickle and accept cache_dir +++
 def _get_from_cache(key: str, cache_dir: Path) -> Optional[Any]:
     """Reads a result from the specified file system cache using pickle."""
     if not CACHE_ENABLED:
@@ -58,7 +56,6 @@ def _get_from_cache(key: str, cache_dir: Path) -> Optional[Any]:
     return None
 
 
-# +++ MODIFIED: Use pickle and accept cache_dir +++
 def _write_to_cache(key: str, data: Any, cache_dir: Path):
     """Writes a result to the specified file system cache using pickle."""
     if not CACHE_ENABLED:
@@ -85,13 +82,13 @@ def get_client() -> Mastodon:
     Initializes and returns a singleton Mastodon client.
     This is lazy-loaded on first call, making the module testable.
     """
-    # +++ MODIFIED: Sanitize base URL +++
+    # Sanitize base URL
     if not config.MASTODON_BASE_URL:
         # This will be caught by validate_config(), but good to check.
         raise ConnectionError("MASTODON_BASE_URL is not set.")
 
     # Strip any trailing slashes to prevent 404 errors on endpoints
-    api_base_url = config.MASTODON_BASE_URL.rstrip('/')
+    api_base_url = config.MASTODON_BASE_URL.rstrip("/")
 
     log.info(f"Initializing Mastodon client for {api_base_url}...")
     try:
@@ -112,10 +109,10 @@ def get_client() -> Mastodon:
 
 # --- Helper Function for Pagination (from Cheat Sheet) ---
 def _fetch_paginated_results(
-        fetch_func_name: str,  # Pass the name of the method to call
-        max_pages: int,
-        limit_per_page: int,
-        **kwargs,
+    fetch_func_name: str,  # Pass the name of the method to call
+    max_pages: int,
+    limit_per_page: int,
+    **kwargs,
 ) -> List[dict]:
     """Generic helper to walk timeline/search pages."""
     all_results = []
@@ -144,7 +141,7 @@ def _fetch_paginated_results(
     return all_results
 
 
-# --- +++ NEW: Function to get user's own ID +++ ---
+# --- Function to get user's own ID ---
 @lru_cache(maxsize=1)
 def _get_my_account_id() -> Optional[int]:
     """
@@ -152,7 +149,6 @@ def _get_my_account_id() -> Optional[int]:
     Caches the result.
     """
     key = _get_cache_key("_get_my_account_id")
-    # +++ MODIFIED: Use CACHE_ME_DIR +++
     cached_data = _get_from_cache(key, CACHE_ME_DIR)
     if cached_data is not None:
         return cached_data.get("id")
@@ -160,10 +156,7 @@ def _get_my_account_id() -> Optional[int]:
     log.info("Fetching authenticated user's account ID...")
     client = get_client()
     try:
-        # +++ MODIFIED: Use me() as a synonym for verify_credentials() +++
-        # It's cleaner and does the same thing.
         my_account_info = client.me()
-        # +++ MODIFIED: Use CACHE_ME_DIR +++
         _write_to_cache(key, my_account_info, CACHE_ME_DIR)
         return my_account_info.get("id")
     except Exception as e:
@@ -171,7 +164,7 @@ def _get_my_account_id() -> Optional[int]:
         raise
 
 
-# --- +++ NEW: Function to get following list +++ ---
+# --- Function to get following list ---
 def get_my_following_ids() -> Set[int]:
     """
     Fetches the set of account IDs the user currently follows.
@@ -183,7 +176,6 @@ def get_my_following_ids() -> Set[int]:
 
     # Caching wrapper
     key = _get_cache_key("get_my_following_ids", my_id)
-    # +++ MODIFIED: Use CACHE_ME_DIR +++
     cached_data = _get_from_cache(key, CACHE_ME_DIR)
     if cached_data is not None:
         return set(cached_data)  # Re-hydrate from list to set
@@ -203,7 +195,6 @@ def get_my_following_ids() -> Set[int]:
 
         following_ids = {acct["id"] for acct in all_following}
 
-        # +++ MODIFIED: Use CACHE_ME_DIR +++
         _write_to_cache(key, list(following_ids), CACHE_ME_DIR)  # Cache as a list
         return following_ids
     except (MastodonNetworkError, MastodonAPIError) as e:
@@ -217,7 +208,7 @@ def get_my_following_ids() -> Set[int]:
 # --- API Functions (from Spec) ---
 
 
-def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[dict]:
+def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[Any]:
     """
     Searches for statuses matching a keyword.
     Uses search(result_type="statuses") as per cheat sheet.
@@ -230,7 +221,7 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[dict]:
     # Caching wrapper
     # Note: max_pages is included in the key for consistency, though unused
     key = _get_cache_key("search_statuses_by_keyword", keyword, max_pages)
-    # +++ MODIFIED: Use CACHE_DIR +++
+
     cached_data = _get_from_cache(key, CACHE_DIR)
     if cached_data is not None:
         return cached_data  # type: ignore
@@ -246,7 +237,6 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[dict]:
         )
         # The search result is a dict: {'accounts': [], 'statuses': [], 'hashtags': []}
         data = results.get("statuses", [])
-        # +++ MODIFIED: Use CACHE_DIR +++
         _write_to_cache(key, data, CACHE_DIR)
         return data
     except (MastodonNetworkError, MastodonAPIError, MastodonRatelimitError) as e:
@@ -254,14 +244,13 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[dict]:
         return []
 
 
-def search_statuses_by_hashtag(tag: str, max_pages: int) -> List[dict]:
+def search_statuses_by_hashtag(tag: str, max_pages: int) -> List[Any]:
     """
     Fetches statuses for a specific hashtag timeline.
     Uses timeline("tag/...") as per cheat sheet.
     """
     # Caching wrapper
     key = _get_cache_key("search_statuses_by_hashtag", tag, max_pages)
-    # +++ MODIFIED: Use CACHE_DIR +++
     cached_data = _get_from_cache(key, CACHE_DIR)
     if cached_data is not None:
         return cached_data  # type: ignore
@@ -275,11 +264,11 @@ def search_statuses_by_hashtag(tag: str, max_pages: int) -> List[dict]:
         timeline=timeline_name,
     )
 
-    # +++ MODIFIED: Use CACHE_DIR +++
     _write_to_cache(key, data, CACHE_DIR)
     return data
 
-def search_accounts_by_keyword(keyword: str) -> List[dict]:
+
+def search_accounts_by_keyword(keyword: str) -> List[Any]:
     """
     Searches for accounts matching a keyword in their profile.
     Uses search(result_type="accounts").
@@ -287,14 +276,11 @@ def search_accounts_by_keyword(keyword: str) -> List[dict]:
     """
     # Caching wrapper
     key = _get_cache_key("search_accounts_by_keyword", keyword)
-    # +++ MODIFIED: Use CACHE_DIR +++
     cached_data = _get_from_cache(key, CACHE_DIR)
     if cached_data is not None:
         return cached_data  # type: ignore
 
-    log.info(
-        f"Searching for accounts matching: '{keyword}'..."
-    )
+    log.info(f"Searching for accounts matching: '{keyword}'...")
     client = get_client()
 
     try:
@@ -310,7 +296,8 @@ def search_accounts_by_keyword(keyword: str) -> List[dict]:
         log.warning(f"Error during account search for '{keyword}': {e}")
         return []
 
-def get_account(account_id: int) -> Optional[dict]:
+
+def get_account(account_id: int) -> Optional[Any]:
     """
     Gets the full, canonical account info.
     """
@@ -333,8 +320,8 @@ def get_account(account_id: int) -> Optional[dict]:
 
 
 def get_account_statuses(
-        account_id: int, limit: int, exclude_reblogs: bool = True
-) -> Optional[List[dict]]:
+    account_id: int, limit: int, exclude_reblogs: bool = True
+) -> Optional[List[Any]]:
     """
     Gets recent statuses, excluding reblogs as specified.
     """

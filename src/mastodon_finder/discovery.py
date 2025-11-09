@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 def discover_accounts(
     keywords: List[str],
     hashtags: List[str],
-    # +++ NEW ARGS +++
     profile_keywords: List[str],
     profile_hashtags: List[str],
     max_pages_per_term: int,
@@ -44,7 +43,7 @@ def discover_accounts(
             except Exception as e:
                 log.warning(f"Could not parse account from status {status.id}: {e}")
 
-    # +++ NEW: 3. Search by Profile Terms +++
+    # 3. Search by Profile Terms
     # Combine keywords and hashtags (with # prepended) into one list
     profile_terms = list(profile_keywords)
     profile_terms.extend([f"#{tag}" for tag in profile_hashtags])
@@ -58,7 +57,6 @@ def discover_accounts(
                 candidates.setdefault(account_id, set()).add(f"profile_term:{term}")
             except Exception as e:
                 log.warning(f"Could not parse account from profile search: {e}")
-
 
     # 4. Convert sets to lists for final output
     final_candidates = {id: list(reasons) for id, reasons in candidates.items()}

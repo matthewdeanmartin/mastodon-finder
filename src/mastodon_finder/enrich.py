@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from bs4 import BeautifulSoup
-# +++ NEW IMPORT +++
 from langdetect import LangDetectException, detect
 
 import mastodon_finder.mastodon_client as mastodon_client
@@ -29,12 +28,11 @@ class AccountDossier:
     note_text: str  # HTML stripped
     fields: Dict[str, str]  # Profile metadata fields
     discovered_via: List[str]
-    # +++ MODIFIED: Added bot status +++
     bot: bool  # Account is marked as a bot
-    # +++ NEW: For reply filter +++
     reply_posts_found: int  # Number of replies in recent statuses
-    # +++ MODIFIED: Added language to tuple +++
-    recent_posts: List[Tuple[datetime, str, Optional[str]]] = field(default_factory=list)  # (ts, text, lang)
+    recent_posts: List[Tuple[datetime, str, Optional[str]]] = field(
+        default_factory=list
+    )  # (ts, text, lang)
 
     # Helper property for filtering
     @property
@@ -60,7 +58,7 @@ def strip_html(html_content: str) -> str:
 
 # --- Enrichment Function ---
 def build_dossier(
-        account_id: int, discovery_reasons: List[str], max_statuses: int
+    account_id: int, discovery_reasons: List[str], max_statuses: int
 ) -> Optional[AccountDossier]:
     """
     Fetches full account and status info to build a dossier.
@@ -94,17 +92,17 @@ def build_dossier(
 
     # Clean recent posts
     recent_posts = []
-    # +++ NEW: For reply filter +++
+    # For reply filter
     replies_found = 0
     for p in statuses:
-        # +++ NEW: Logic for reply filter +++
+        # Logic for reply filter
         if p.in_reply_to_id:
             replies_found += 1
             continue  # Don't include replies in the dossier's post list
 
         post_text = strip_html(p.content)
 
-        # +++ NEW: Logic for language filter +++
+        # Logic for language filter
         detected_lang = None
         if post_text:
             try:
@@ -129,8 +127,7 @@ def build_dossier(
         note_text=note_text,
         fields=profile_fields,
         discovered_via=discovery_reasons,
-
-        # +++ MODIFIED: Add new fields +++
+        # MODIFIED: Add new fields
         bot=acct.bot,
         reply_posts_found=replies_found,
         recent_posts=recent_posts,
@@ -138,7 +135,7 @@ def build_dossier(
 
 
 def build_dossiers(
-        candidates: Dict[int, List[str]], max_statuses: int, max_accounts: int
+    candidates: Dict[int, List[str]], max_statuses: int, max_accounts: int
 ) -> List[AccountDossier]:
     """Builds dossiers for all candidates, up to a limit."""
     dossiers = []

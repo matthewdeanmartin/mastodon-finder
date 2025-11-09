@@ -2,21 +2,19 @@ import csv
 import logging
 from typing import List
 
-# +++ NEW IMPORTS +++
 from rich import print as rprint
-import mastodon_finder.config as config
 
+import mastodon_finder.config as config
 from mastodon_finder.llm_runner import EvaluationResult
 
 log = logging.getLogger(__name__)
 
-# +++ NEW: Color mapping +++
 COLOR_MAP = {
     "FOLLOW": "bold green",
     "MAYBE": "bold yellow",
     "SKIP": "bold dim",
     "ERROR": "bold red",
-    "DRY_RUN": "bold blue"
+    "DRY_RUN": "bold blue",
 }
 
 
@@ -32,14 +30,15 @@ def write_report(results: List[EvaluationResult], output_file: str | None = None
     base_url = "mastodon.social"  # Default
     if config.MASTODON_BASE_URL:
         # Strip protocol for a cleaner URL
-        base_url = config.MASTODON_BASE_URL.replace("https://", "").replace("http://", "")
+        base_url = config.MASTODON_BASE_URL.replace("https://", "").replace(
+            "http://", ""
+        )
 
     for res in results:
         color = COLOR_MAP.get(res.decision, "white")
         # Pad decision string for alignment (7 chars: "MAYBE", "FOLLOW", "SKIP")
         decision_str = f"[[{color}]{res.decision: <7}[/]]"
 
-        # +++ NEW: Create remote follow URL +++
         # Format: https://<your_instance>/@<user>@<their_instance>
         follow_url = f"https://{base_url}/@{res.dossier.acct}"
 
@@ -62,7 +61,7 @@ def write_report(results: List[EvaluationResult], output_file: str | None = None
             raise
 
 
-def _write_md(results: List[EvaluationResult], filename: str):
+def _write_md(results: List[EvaluationResult], filename: str) -> None:
     """Writes a Markdown report."""
     with open(filename, "w", encoding="utf-8") as f:
         f.write("# Mastodon Finder Report\n\n")
@@ -82,7 +81,7 @@ def _write_md(results: List[EvaluationResult], filename: str):
             f.write("---\n")
 
 
-def _write_csv(results: List[EvaluationResult], filename: str):
+def _write_csv(results: List[EvaluationResult], filename: str) -> None:
     """Writes a CSV report (as per Spec 2)."""
     with open(filename, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
