@@ -1,0 +1,140 @@
+[project]
+name = "mastodon-finder"
+version = "0.1.0"
+keywords = ["mastodon"]
+description = "Search for mastodon profiles, use mechanical and LLM filtering."
+readme = "README.md"
+authors = [
+    { name = "Matthew Dean Martin", email = "matthewdeanmartin@gmail.com" },
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Console",
+    "Framework :: Pydantic",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    # "Programming Language :: Python :: 3.15",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License"
+]
+
+
+dependencies = [
+    "mastodon-py",
+    "python-dotenv",
+    "beautifulsoup4",
+    "openai",
+    "langdetect",
+    "rich"
+]
+
+[dependency-groups]
+dev = [
+    "pip-licenses",
+    #    "toml-formatter",
+    "bitrab",
+    "types-PyYAML",
+    "troml;python_version>='3.11'",
+    "cli-tool-audit",
+    "git2md; python_version >= '3.10'",
+    "pyclean; python_version >= '3.12'",
+    "strip-docs>=1.0; python_version >= '3.12'",
+    "gha-update; python_version >= '3.12'",
+    "mkdocstrings[python]",
+    "mkdocs; python_version >= '3.12'",
+    "mdformat",
+    # plugin finder
+    "packaging; python_version >= '3.8'",
+    # mpy
+    "types-retry",
+    "types-Markdown",
+    "mypy; python_version >= '3.8'",
+    "types-toml; python_version >= '3.8'",
+    # reports
+
+    # build
+    "vermin; python_version >= '3.8'",
+    "metametameta>=0.1.3; python_version >= '3.9'",
+    "hatchling; python_version >= '3.8'",
+    "ruff>=0.12.0; python_version >= '3.8'",
+    "pylint; python_version >= '3.8'",
+    "bandit; python_version >= '3.8'",
+    "bandit>=1.8.6; python_version >= '3.14'",
+    "pre-commit; python_version >= '3.8'",
+    # testing tools
+    "pytest; python_version >= '3.8'",
+    "pytest-cov; python_version >= '3.8'",
+    "pytest-xdist>=3.5.0; python_version >= '3.8'",
+    "pytest-randomly>=3.15.0; python_version >= '3.8'",
+    "pytest-sugar>=0.9.7; python_version >= '3.8'",
+    "pytest-mock; python_version >= '3.8'",
+    # "pytest-unused-whichfixtures; python_version >= '3.10'",
+    "hypothesis[cli]; python_version >= '3.8'",
+    "detect-test-pollution",
+    "pytest-timeout>=2.4.0",
+    # docs
+    "interrogate>=1.5.0; python_version >= '3.8'",
+    "pydoctest==0.2.1; python_version >= '3.8'",
+    "pdoc3>=0.5.0; python_version >= '3.8'",
+    "mdformat>=0.5.0; python_version >= '3.8'",
+    "linkcheckmd>=1.4.0; python_version >= '3.8'",
+    "codespell>=2.2.6; python_version >= '3.8'",
+    "pyenchant>=3.2.2; python_version >= '3.8'",
+]
+
+[project.urls]
+Repository = "https://github.com/matthewdeanmartin/mastodon_finder"
+Documentation = "https://mastodon-finder.readthedocs.io/en/latest/"
+Changelog = "https://github.com/matthewdeanmartin/mastodon_finder/blob/main/CHANGELOG.md"
+
+homepage = "https://github.com/matthewdeanmartin/mastodon_finder"
+issues = "https://github.com/matthewdeanmartin/mastodon_finder/issues/"
+
+
+[project.scripts]
+mastodon-finder = "mastodon_finder:finder.main"
+mastodon_finder = "mastodon_finder:finder.main"
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/readme_rater/**/*.py",
+    "src/readme_rater/py.typed",
+    "src/mastodon_finder/**/*.py",
+    "src/mastodon_finder/py.typed",
+    "/README.md", "LICENSE",
+]
+
+exclude = [
+
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mastodon_finder"]
+include = [
+    "src/readme_rater/**/*.py",
+    "src/readme_rater/py.typed",
+    "src/mastodon_finder/**/*.py",
+    "src/mastodon_finder/py.typed",
+    "/README.md", "LICENSE",
+]
+
+
+[mypy]
+plugins = "pydantic.mypy"
+
+[tool.mastodon-finder]
+mode = "application"  # or "library"
+use_ai = true
+

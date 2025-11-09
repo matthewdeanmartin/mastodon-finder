@@ -1,0 +1,135 @@
+# Simple GitLab pipeline using uv. All bash is inlined; no Makefile logic.
+
+# Stages: test (lint, mypy, pytest), security (bandit), docs (checks & build), build (package), release (manual publish)
+
+
+image: python:3.11-slim
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  UV_LINK_MODE: copy
+  UV_PROJECT_ENVIRONMENT: .venv
+  UV_CACHE_DIR: .uv
+  # Adjust if your package name differs
+
+  PACKAGE_DIR: mastodon_finder
+
+stages:
+  - test
+  - security
+  - docs
+  - build
+  - release
+
+# Shared setup to avoid duplication
+
+#before_script:
+#  - set -euo pipefail
+#  - apt-get update -y && apt-get install -y --no-install-recommends curl git ca-certificates && rm -rf /var/lib/apt/lists/*
+#  - |
+#    curl -LsSf https://astral.sh/uv/install.sh | sh -s -- -y
+#  - export PATH="$HOME/.local/bin:$PATH"
+#  - uv --version
+#  - uv sync --dev
+
+cache:
+  key:
+    files:
+      - pyproject.toml
+      - uv.lock
+  paths:
+    - .venv/
+    - .uv/
+    - .cache/
+
+# ------------------------
+
+# TEST STAGE
+
+# ------------------------
+
+
+lint:
+  stage: test
+  script: >-
+    ./scripts/bitrab/lint.sh
+  allow_failure: false
+
+mypy:
+  stage: test
+  script: >-
+    ./scripts/bitrab/mypy.sh
+precommit:
+  stage: test
+  script: >-
+    ./scripts/bitrab/precommit.sh
+pytest:
+  stage: test
+  needs: [ "lint" ]
+  script: >-
+    ./scripts/bitrab/pytest.sh
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - htmlcov/
+      - coverage.xml
+
+# ------------------------
+
+# SECURITY STAGE
+
+# ------------------------
+
+
+bandit:
+  stage: security
+  script: >-
+    ./scripts/bitrab/bandit.sh
+check_docs:
+  stage: docs
+  script: >-
+    ./scripts/bitrab/check_docs.sh
+build_docs:
+  stage: docs
+  script: >-
+    ./scripts/bitrab/build_docs.sh
+  artifacts:
+    paths:
+      - docs/
+
+# ------------------------
+
+# BUILD STAGE
+
+# ------------------------
+
+
+build_package:
+  stage: build
+  script: >-
+    ./scripts/bitrab/build_package.sh
+  artifacts:
+    paths:
+      - dist/
+
+# ------------------------
+
+# RELEASE STAGE (manual)
+
+# ------------------------
+
+
+publish_pypi:
+  stage: release
+  needs: [ "build_package" ]
+  rules:
+    - if: "$CI_COMMIT_TAG"
+      when: manual
+    - when: never
+  script: >-
+    ./scripts/bitrab/publish_pypi.sh
