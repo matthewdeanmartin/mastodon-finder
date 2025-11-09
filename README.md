@@ -31,21 +31,24 @@ git clone until I can make a package
 - Caching for info about self, e.g. current friends
 - Caching for other API calls, e.g. for resuming a failed run
 - langdetect for posts
-- Filter 
-  - by minimum number of posts - is anyone one home
-  - post recency - is anyone home now
-  - original vs retweet - do they write their own content
-  - original vs all links - is this an RSS feed cross posted to mastodon?
-  - does the author ever reply to anyone?
+- Filter
+    - by minimum number of posts - is anyone one home
+    - post recency - is anyone home now
+    - original vs retweet - do they write their own content
+    - original vs all links - is this an RSS feed cross posted to mastodon?
+    - does the author ever reply to anyone?
 - LLM filter
-  - By static rubric
-    - Is it the right language?
-    - Is it the right topic?
-    - Did it hit all the topics?
-    - Is there some other unforeseen problem?
-
+    - By static rubric
+        - Is it the right language?
+        - Is it the right topic?
+        - Did it hit all the topics?
+        - Is there some other unforeseen problem?
 
 ## Prior Art
 
-- Bad profile search has been touted at a privacy feature
-- Fedidevs
+Bad profile search and bad search has been touted as an intentional privacy feature
+
+### Directories
+
+- [Trunk](https://communitywiki.org/trunk)
+- [Fedi.Directory](https://fedi.directory/)
