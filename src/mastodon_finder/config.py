@@ -1,3 +1,4 @@
+# mastodon_finder/config.py
 import os
 import sys
 
@@ -10,33 +11,26 @@ load_dotenv()
 MASTODON_BASE_URL = os.getenv("MASTODON_BASE_URL")
 MASTODON_ACCESS_TOKEN = os.getenv("MASTODON_ACCESS_TOKEN")
 
-# --- Discovery Terms (Defaults) ---
-DEFAULT_KEYWORDS = [
-    "software developer",
-    "computer engineer",
-    "coder",
-    "hacker",
-    "webdev",
-    "devops",
+
+DEFAULT_FOLLOW_TARGETS = [
+
 ]
-DEFAULT_HASHTAGS = ["sciFi", "scienceFiction"]
+DEFAULT_FOLLOW_LIMIT = -1
+
+# --- Discovery Terms (Defaults) ---
+DEFAULT_KEYWORDS = [ "golang", "ruby", "cobol", "c++", "rust", "typescript"]
+DEFAULT_HASHTAGS = ["golang", "ruby", "cobol", "c++", "rust", "typescript"]
 DEFAULT_TOPICS = [
-    "software developer and scifi fan",
-    "python computer engineer and scifi fan",
+    "software developer, software engineer, coder"
 ]
 
 # --- Profile search terms ---
-DEFAULT_PROFILE_KEYWORDS = [
-    "software developer",
-    "computer engineer",
-    "coder",
-    "hacker",
-]
-DEFAULT_PROFILE_HASHTAGS = ["sciFi", "scienceFiction"]
+DEFAULT_PROFILE_KEYWORDS = [ "golang", "ruby", "cobol", "c++", "rust", "typescript"]
+DEFAULT_PROFILE_HASHTAGS = [ "golang", "ruby", "cobol", "c++", "rust", "typescript"]
 
 # --- Fetch Limits (Defaults) ---
 # Max accounts to process in a single run
-MAX_ACCOUNTS_PER_RUN = 100
+MAX_ACCOUNTS_PER_RUN =200
 # Max original statuses to fetch per account
 MAX_STATUSES_PER_ACCOUNT = 120
 # Max pages of results to fetch per keyword/hashtag

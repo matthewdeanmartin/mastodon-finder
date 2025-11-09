@@ -1,4 +1,4 @@
-# finder.py
+# mastodon_finder/finder.py
 
 import argparse
 import logging
@@ -130,6 +130,21 @@ def main():
         help="List of hashtags (without #) to search for in *user profiles*.",
     )
 
+    # +++ NEW ARGUMENTS +++
+    parser.add_argument(
+        "--follow-targets",
+        nargs="+",
+        default=config.DEFAULT_FOLLOW_TARGETS,
+        help="List of 'interest accounts' (e.g., @user@server) to find followers of.",
+    )
+    parser.add_argument(
+        "--follow-target-limit",
+        type=int,
+        default=config.DEFAULT_FOLLOW_LIMIT,
+        help="Max followers to fetch per target account (-1 for all).",
+    )
+    # +++ END NEW ARGUMENTS +++
+
     parser.add_argument(
         "--topics",
         nargs="+",
@@ -250,6 +265,7 @@ def main():
     log.info(f"Post Hashtags: {args.hashtags}")
     log.info(f"Profile Keywords: {args.profile_keywords}")
     log.info(f"Profile Hashtags: {args.profile_hashtags}")
+    log.info(f"Follow Targets: {args.follow_targets}")  # +++ NEW +++
     log.info(f"LLM Topics: {args.topics}")
 
     try:
@@ -259,6 +275,8 @@ def main():
             args.hashtags,
             args.profile_keywords,
             args.profile_hashtags,
+            args.follow_targets,  # +++ NEW +++
+            args.follow_target_limit,  # +++ NEW +++
             args.max_pages,
         )
         if not candidates:

@@ -17,4 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Basic functionality
+- Search by keyword, hashtag for post, for account bio
+- Search by "followers of an account" as signal of interest, geograph, etc.
+- Filters out already followed
+- Caching for info about self, e.g. current friends
+- Caching for other API calls, e.g. for resuming a failed run
+- langdetect for posts
+- Filter 
+  - by minimum number of posts
+  - post recency
+  - original vs retweet
+  - original vs all links 
+- LLM filter
+  - By static rubric

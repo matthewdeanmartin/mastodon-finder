@@ -1,4 +1,4 @@
-# enrich.py
+# mastodon_finder/enrich.py
 
 import logging
 from dataclasses import dataclass, field

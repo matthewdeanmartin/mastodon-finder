@@ -1,3 +1,4 @@
+# mastodon_finder/discover.py
 import logging
 from typing import Dict, List, Set
 
@@ -11,6 +12,8 @@ def discover_accounts(
     hashtags: List[str],
     profile_keywords: List[str],
     profile_hashtags: List[str],
+    follow_targets: List[str],  # +++ NEW +++
+    follow_target_limit: int,  # +++ NEW +++
     max_pages_per_term: int,
 ) -> Dict[int, List[str]]:
     """
@@ -58,7 +61,32 @@ def discover_accounts(
             except Exception as e:
                 log.warning(f"Could not parse account from profile search: {e}")
 
-    # 4. Convert sets to lists for final output
+    # +++ NEW: 4. Search by Follow Targets +++
+    for handle in follow_targets:
+        log.info(f"Looking up target account: {handle}")
+        target_id = mastodon_client.lookup_account_id_by_handle(handle)
+
+        if not target_id:
+            log.warning(f"Could not find or resolve target account {handle}. Skipping.")
+            continue
+
+        log.info(
+            f"Fetching {follow_target_limit if follow_target_limit != -1 else 'all'} "
+            f"followers for {handle} (ID: {target_id})..."
+        )
+        followers = mastodon_client.get_account_followers(
+            target_id, follow_target_limit
+        )
+
+        log.info(f"Found {len(followers)} followers for {handle}.")
+        for account in followers:
+            try:
+                account_id = account.id
+                candidates.setdefault(account_id, set()).add(f"follows_target:{handle}")
+            except Exception as e:
+                log.warning(f"Could not parse account from follower list: {e}")
+
+    # 5. Convert sets to lists for final output
     final_candidates = {id: list(reasons) for id, reasons in candidates.items()}
     log.info(
         f"Discovery phase complete. Found {len(final_candidates)} unique accounts."

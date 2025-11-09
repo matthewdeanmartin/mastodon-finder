@@ -1,3 +1,4 @@
+# mastodon_finder/mastodon_client.py
 import hashlib
 import json
 import logging
@@ -295,6 +296,115 @@ def search_accounts_by_keyword(keyword: str) -> List[Any]:
     except (MastodonNetworkError, MastodonAPIError, MastodonRatelimitError) as e:
         log.warning(f"Error during account search for '{keyword}': {e}")
         return []
+
+
+# +++ NEW FUNCTION +++
+def lookup_account_id_by_handle(handle: str) -> Optional[int]:
+    """
+    Resolves a Mastodon handle (e.g., @user@server) to an account ID.
+    Caches the result.
+    """
+    # Sanitize handle - remove leading '@' if present for lookup key
+    handle_no_at = handle.lstrip("@")
+
+    key = _get_cache_key("lookup_account_id_by_handle", handle_no_at)
+    cached_data = _get_from_cache(key, CACHE_DIR)
+    if cached_data is not None:
+        return cached_data  # This will be the account_id (int or None)
+
+    log.info(f"Resolving account ID for handle: '@{handle_no_at}'...")
+    client = get_client()
+
+    try:
+        # We search for the handle. resolve=True is key.
+        results = client.search(
+            q=f"@{handle_no_at}",  # Search with the '@'
+            result_type="accounts",
+            resolve=True,
+        )
+
+        accounts = results.get("accounts", [])
+
+        if not accounts:
+            log.warning(f"No account found for handle: '@{handle_no_at}'")
+            _write_to_cache(key, None, CACHE_DIR)
+            return None
+
+        # Find the exact match. Search can be fuzzy.
+        # acct can be 'user@server' or just 'user' if local
+        for acc in accounts:
+            if acc.acct == handle_no_at:
+                account_id = acc.id
+                log.info(f"Found exact match for '@{handle_no_at}': ID {account_id}")
+                _write_to_cache(key, account_id, CACHE_DIR)
+                return account_id
+
+        # Fallback: if no exact match, but we got one result,
+        # it's probably the right one.
+        if len(accounts) == 1:
+            account_id = accounts[0].id
+            log.warning(
+                f"Using fuzzy match for '@{handle_no_at}': found '{accounts[0].acct}' (ID: {account_id})"
+            )
+            _write_to_cache(key, account_id, CACHE_DIR)
+            return account_id
+
+        log.warning(
+            f"Multiple inexact matches for '@{handle_no_at}'. Could not resolve."
+        )
+        _write_to_cache(key, None, CACHE_DIR)
+        return None
+
+    except (MastodonNetworkError, MastodonAPIError, MastodonRatelimitError) as e:
+        log.warning(f"Error during account lookup for '@{handle_no_at}': {e}")
+        return None
+
+
+# +++ NEW FUNCTION +++
+def get_account_followers(account_id: int, max_followers: int) -> List[Any]:
+    """
+    Fetches the followers of a given account, up to max_followers.
+    If max_followers is -1, fetches all.
+    """
+    # Caching wrapper
+    key = _get_cache_key("get_account_followers", account_id, max_followers)
+    cached_data = _get_from_cache(key, CACHE_DIR)
+    if cached_data is not None:
+        return cached_data  # type: ignore
+
+    log.info(f"Fetching followers for account {account_id} (limit: {max_followers})...")
+    client = get_client()
+    all_results = []
+    limit_per_page = 80  # Max allowed by Mastodon API
+
+    try:
+        page = client.account_followers(id=account_id, limit=limit_per_page)
+        page_count = 0
+        while page:
+            all_results.extend(page)
+            page_count += 1
+
+            # Check if we've hit the max_followers limit
+            if max_followers != -1 and len(all_results) >= max_followers:
+                log.info(
+                    f"Reached follower limit ({max_followers}) after {page_count} pages."
+                )
+                break
+
+            log.info(f"Fetched page {page_count} ({len(page)} followers)...")
+            page = client.fetch_next(page)
+
+    except (MastodonNetworkError, MastodonAPIError, MastodonRatelimitError) as e:
+        log.warning(
+            f"Error during pagination for account_followers ({account_id}): {e}"
+        )
+
+    # Trim results if we overshot
+    if max_followers != -1:
+        all_results = all_results[:max_followers]
+
+    _write_to_cache(key, all_results, CACHE_DIR)
+    return all_results
 
 
 def get_account(account_id: int) -> Optional[Any]:
