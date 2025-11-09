@@ -4,6 +4,7 @@ import json
 import logging
 import pickle
 import sys
+from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, List, Optional, Set
@@ -15,7 +16,8 @@ from mastodon import (
     MastodonRatelimitError,
 )
 
-import mastodon_finder.config as config
+# --- Modified Import ---
+from mastodon_finder.settings import Settings
 
 # Set up logging
 logging.basicConfig(
@@ -70,37 +72,88 @@ def _write_to_cache(key: str, data: Any, cache_dir: Path):
         log.warning(f"Failed to write cache file {cache_file}: {e}")
 
 
-# --- End Caching Setup ---
+
+def _clean_old_cache_files(max_age_days: int = 5):
+    """Removes cache files older than max_age_days from all cache directories."""
+    log.info(f"Cleaning cache files older than {max_age_days} days...")
+
+    dirs_to_clean = [CACHE_DIR, CACHE_ME_DIR]
+    cutoff_timestamp = (datetime.now() - timedelta(days=max_age_days)).timestamp()
+
+    files_cleaned = 0
+    files_kept = 0
+
+    for cache_dir in dirs_to_clean:
+        if not cache_dir.exists():
+            continue
+
+        # Iterate through all .pkl files in the directory
+        for file_path in cache_dir.glob("*.pkl"):
+            try:
+                # Get file modification time
+                file_mtime = file_path.stat().st_mtime
+
+                if file_mtime < cutoff_timestamp:
+                    file_path.unlink()  # Delete the file
+                    files_cleaned += 1
+                else:
+                    files_kept += 1
+            except FileNotFoundError:
+                # File might have been deleted by another process, ignore
+                pass
+            except Exception as e:
+                log.warning(f"Error processing cache file {file_path}: {e}")
+
+    log.info(f"Cache cleanup complete. Removed: {files_cleaned}, Kept: {files_kept}")
 
 
 # --- Client Initialization ---
-# Use lru_cache(maxsize=1) as a simple, thread-safe way to create a singleton
-# that is initialized on first use, not on import. This makes the module
-# safe to import in unit tests.
-@lru_cache(maxsize=1)
-def get_client() -> Mastodon:
+# Use a global variable to hold the singleton.
+_CLIENT_SINGLETON: Optional[Mastodon] = None
+
+
+def get_client(settings: Optional[Settings] = None) -> Mastodon:
     """
     Initializes and returns a singleton Mastodon client.
-    This is lazy-loaded on first call, making the module testable.
+    The 'settings' object must be provided on the first call.
+    Subsequent calls can omit it.
     """
+    global _CLIENT_SINGLETON
+    if _CLIENT_SINGLETON:
+        return _CLIENT_SINGLETON
+
+    if not settings:
+        raise ValueError(
+            "Mastodon client not initialized. 'settings' must be provided on first call."
+        )
+
+    # --- NEW: Call cache cleanup ---
+    _clean_old_cache_files(max_age_days=5)
+    # --- END NEW ---
+
     # Sanitize base URL
-    if not config.MASTODON_BASE_URL:
-        # This will be caught by validate_config(), but good to check.
+    base_url = settings.mastodon_base_url
+    access_token = settings.mastodon_access_token
+
+    if not base_url:
+        # This should be caught by Pydantic, but double-check
         raise ConnectionError("MASTODON_BASE_URL is not set.")
 
     # Strip any trailing slashes to prevent 404 errors on endpoints
-    api_base_url = config.MASTODON_BASE_URL.rstrip("/")
+    api_base_url = base_url.rstrip("/")
 
     log.info(f"Initializing Mastodon client for {api_base_url}...")
     try:
         client = Mastodon(
-            access_token=config.MASTODON_ACCESS_TOKEN,
+            access_token=access_token,
             api_base_url=api_base_url,
             ratelimit_method="wait",  # Let Mastodon.py handle pauses
         )
         # verify_credentials() is the first network call
         client.retrieve_mastodon_version()
         log.info("Successfully connected and verified credentials.")
+
+        _CLIENT_SINGLETON = client  # Save the singleton
         return client
     except Exception as e:
         log.error(f"Failed to connect to Mastodon API: {e}")
@@ -111,21 +164,21 @@ def get_client() -> Mastodon:
 # --- Helper Function for Pagination (from Cheat Sheet) ---
 def _fetch_paginated_results(
     fetch_func_name: str,  # Pass the name of the method to call
+    page_limit: int,  # Page size
     max_pages: int,
-    limit_per_page: int,
     **kwargs,
 ) -> List[dict]:
     """Generic helper to walk timeline/search pages."""
     all_results = []
     # Get the initialized client. This is the first point
     # where get_client() will be executed.
-    client = get_client()
+    client = get_client()  # Client must be initialized by now
 
     try:
         # Get the actual function (e.g., client.search) from the client object
         fetch_func = getattr(client, fetch_func_name)
 
-        page = fetch_func(limit=limit_per_page, **kwargs)
+        page = fetch_func(limit=page_limit, **kwargs)
         page_count = 0
         while page and page_count < max_pages:
             all_results.extend(page)
@@ -155,7 +208,7 @@ def _get_my_account_id() -> Optional[int]:
         return cached_data.get("id")
 
     log.info("Fetching authenticated user's account ID...")
-    client = get_client()
+    client = get_client()  # Relies on singleton
     try:
         my_account_info = client.me()
         _write_to_cache(key, my_account_info, CACHE_ME_DIR)
@@ -245,13 +298,15 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[Any]:
         return []
 
 
-def search_statuses_by_hashtag(tag: str, max_pages: int) -> List[Any]:
+def search_statuses_by_hashtag(
+    tag: str, max_pages: int, page_size: int
+) -> List[Any]:
     """
     Fetches statuses for a specific hashtag timeline.
     Uses timeline("tag/...") as per cheat sheet.
     """
     # Caching wrapper
-    key = _get_cache_key("search_statuses_by_hashtag", tag, max_pages)
+    key = _get_cache_key("search_statuses_by_hashtag", tag, max_pages, page_size)
     cached_data = _get_from_cache(key, CACHE_DIR)
     if cached_data is not None:
         return cached_data  # type: ignore
@@ -259,9 +314,9 @@ def search_statuses_by_hashtag(tag: str, max_pages: int) -> List[Any]:
     log.info(f"Searching for hashtag: '#{tag}'...")
     timeline_name = f"tag/{tag.lstrip('#')}"
     data = _fetch_paginated_results(
-        fetch_func_name="timeline",  # Pass name of method
+        fetch_func_name="timeline",
+        page_limit=page_size,  # +++ Pass page_size +++
         max_pages=max_pages,
-        limit_per_page=config.DEFAULT_PAGE_LIMIT,
         timeline=timeline_name,
     )
 
@@ -290,7 +345,6 @@ def search_accounts_by_keyword(keyword: str) -> List[Any]:
         )
         # The search result is a dict: {'accounts': [], 'statuses': [], 'hashtags': []}
         data = results.get("accounts", [])
-        # +++ MODIFIED: Use CACHE_DIR +++
         _write_to_cache(key, data, CACHE_DIR)
         return data
     except (MastodonNetworkError, MastodonAPIError, MastodonRatelimitError) as e:
@@ -413,7 +467,6 @@ def get_account(account_id: int) -> Optional[Any]:
     """
     # Caching wrapper
     key = _get_cache_key("get_account", account_id)
-    # +++ MODIFIED: Use CACHE_DIR +++
     cached_data = _get_from_cache(key, CACHE_DIR)
     if cached_data is not None:
         return cached_data  # type: ignore
@@ -421,7 +474,6 @@ def get_account(account_id: int) -> Optional[Any]:
     client = get_client()  # Get client
     try:
         data = client.account(account_id)
-        # +++ MODIFIED: Use CACHE_DIR +++
         _write_to_cache(key, data, CACHE_DIR)
         return data
     except (MastodonNetworkError, MastodonAPIError) as e:
@@ -437,7 +489,6 @@ def get_account_statuses(
     """
     # Caching wrapper
     key = _get_cache_key("get_account_statuses", account_id, limit, exclude_reblogs)
-    # +++ MODIFIED: Use CACHE_DIR +++
     cached_data = _get_from_cache(key, CACHE_DIR)
     if cached_data is not None:
         return cached_data  # type: ignore
@@ -448,9 +499,7 @@ def get_account_statuses(
             account_id,
             limit=limit,
             exclude_reblogs=exclude_reblogs,
-            # exclude_replies=True,  <--- [!!] REMOVE THIS LINE [!!]
         )
-        # +++ MODIFIED: Use CACHE_DIR +++
         _write_to_cache(key, data, CACHE_DIR)
         return data
     except (MastodonNetworkError, MastodonAPIError) as e:

@@ -31,7 +31,9 @@ dependencies = [
     "beautifulsoup4",
     "openai",
     "langdetect",
-    "rich"
+    "rich",
+    "tomli",
+    "pydantic-settings"
 ]
 
 [dependency-groups]

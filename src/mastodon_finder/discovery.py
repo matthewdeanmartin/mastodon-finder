@@ -3,18 +3,16 @@ import logging
 from typing import Dict, List, Set
 
 import mastodon_finder.mastodon_client as mastodon_client
+# --- Modified Import ---
+from mastodon_finder.settings import DiscoveryConfig, LimitsConfig
 
 log = logging.getLogger(__name__)
 
 
 def discover_accounts(
-    keywords: List[str],
-    hashtags: List[str],
-    profile_keywords: List[str],
-    profile_hashtags: List[str],
-    follow_targets: List[str],  # +++ NEW +++
-    follow_target_limit: int,  # +++ NEW +++
-    max_pages_per_term: int,
+    # --- Modified Signature ---
+    disc_config: DiscoveryConfig,
+    limits_config: LimitsConfig,
 ) -> Dict[int, List[str]]:
     """
     Discovers candidate accounts from keywords and hashtags.
@@ -24,9 +22,9 @@ def discover_accounts(
     candidates: Dict[int, Set[str]] = {}
 
     # 1. Search by Keywords (in posts)
-    for keyword in keywords:
+    for keyword in disc_config.keywords:
         statuses = mastodon_client.search_statuses_by_keyword(
-            keyword, max_pages_per_term
+            keyword, limits_config.max_pages
         )
         for status in statuses:
             try:
@@ -37,8 +35,10 @@ def discover_accounts(
                 log.warning(f"Could not parse account from status {status.id}: {e}")
 
     # 2. Search by Hashtags (in posts)
-    for tag in hashtags:
-        statuses = mastodon_client.search_statuses_by_hashtag(tag, max_pages_per_term)
+    for tag in disc_config.hashtags:
+        statuses = mastodon_client.search_statuses_by_hashtag(
+            tag, limits_config.max_pages, 40  # 40 is the default page size
+        )
         for status in statuses:
             try:
                 account_id = status.account.id
@@ -48,8 +48,8 @@ def discover_accounts(
 
     # 3. Search by Profile Terms
     # Combine keywords and hashtags (with # prepended) into one list
-    profile_terms = list(profile_keywords)
-    profile_terms.extend([f"#{tag}" for tag in profile_hashtags])
+    profile_terms = list(disc_config.profile_keywords)
+    profile_terms.extend([f"#{tag}" for tag in disc_config.profile_hashtags])
 
     for term in profile_terms:
         # Call the new client function
@@ -62,7 +62,7 @@ def discover_accounts(
                 log.warning(f"Could not parse account from profile search: {e}")
 
     # +++ NEW: 4. Search by Follow Targets +++
-    for handle in follow_targets:
+    for handle in disc_config.follow_targets:
         log.info(f"Looking up target account: {handle}")
         target_id = mastodon_client.lookup_account_id_by_handle(handle)
 
@@ -70,12 +70,13 @@ def discover_accounts(
             log.warning(f"Could not find or resolve target account {handle}. Skipping.")
             continue
 
+        limit = limits_config.follow_target_limit
         log.info(
-            f"Fetching {follow_target_limit if follow_target_limit != -1 else 'all'} "
+            f"Fetching {limit if limit != -1 else 'all'} "
             f"followers for {handle} (ID: {target_id})..."
         )
         followers = mastodon_client.get_account_followers(
-            target_id, follow_target_limit
+            target_id, limit
         )
 
         log.info(f"Found {len(followers)} followers for {handle}.")

@@ -1,11 +1,16 @@
 # mastodon_finder/prompt_builder.py
-from typing import List, Tuple
+from typing import Tuple
 
-from mastodon_finder.config import DEFAULT_LANGUAGE_FILTER
+
 from mastodon_finder.enrich import AccountDossier
+from mastodon_finder.settings import Settings
 
 
-def build_prompt(dossier: AccountDossier, user_topics: List[str]) -> Tuple[str, str]:
+def build_prompt(
+        dossier: AccountDossier,
+        # --- Modified Signature ---
+        settings: Settings,
+) -> Tuple[str, str]:
     """
     Converts an AccountDossier into system and user prompts
     for the LLM, as per Spec 4.5 and 5.
@@ -51,9 +56,11 @@ def build_prompt(dossier: AccountDossier, user_topics: List[str]) -> Tuple[str, 
     else:
         post_lines.append("No recent original posts found.")
 
-    # --- [SYSTEM PROMPT / RUBRIC] Section (from Spec 5) ---
-    # This is the instruction set
-    topics_str = ", ".join(user_topics)
+    # --- [SYSTEM PROMPT / RUBRIC] Section ---
+    # --- Use settings object ---
+    topics_str = ", ".join(settings.llm.topics)
+    lang_filter = settings.language_filter
+
     rubric_lines = [
         "\n[RUBRIC]",
         "You are an analyst deciding whether to follow a Mastodon account.",
@@ -70,13 +77,20 @@ def build_prompt(dossier: AccountDossier, user_topics: List[str]) -> Tuple[str, 
         "- Strong negative sentiment to matched topics.",
         "- No relevant content.",
         "- Obvious bot or spam account.",
-        f"- Language is primarily not {DEFAULT_LANGUAGE_FILTER}" "",
+    ]
+
+    # Only add language filter rule if it's not 'none'
+    if lang_filter != "none":
+        rubric_lines.append(f"- Language is primarily not {lang_filter}")
+
+    rubric_lines.extend([
+        "",
         "Respond *only* in this exact format:",
         "DECISION: <FOLLOW|MAYBE|SKIP>",
         "REASONING:",
         "- ...",
         "- ...",
-    ]
+    ])
 
     # Combine all parts
     user_prompt = "\n".join(account_lines + bio_lines + field_lines + post_lines)

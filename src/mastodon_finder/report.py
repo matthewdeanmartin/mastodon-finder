@@ -1,12 +1,12 @@
 # mastodon_finder/report.py
 import csv
 import logging
-from typing import List
+from typing import Dict, List
 
 from rich import print as rprint
 
-import mastodon_finder.config as config
 from mastodon_finder.llm_runner import EvaluationResult
+from mastodon_finder.settings import Settings
 
 log = logging.getLogger(__name__)
 
@@ -18,24 +18,46 @@ COLOR_MAP = {
     "DRY_RUN": "bold blue",
 }
 
+# Define the desired sort order for the final report
+DECISION_ORDER = {
+    "FOLLOW": 0,
+    "MAYBE": 1,
+    "SKIP": 2,
+    "DRY_RUN": 3,
+    "ERROR": 4,
+}
 
-def write_report(results: List[EvaluationResult], output_file: str | None = None):
+
+def write_report(
+    results: List[EvaluationResult],
+    discard_counts: Dict[str, int],
+    # --- Modified Signature ---
+    settings: Settings,
+):
     """
     Writes a summary report to the console and optionally to a file (MD or CSV).
+    Sorts the report by FOLLOW, MAYBE, SKIP.
+    Includes a summary of discarded accounts.
     """
 
     log.info(f"\n--- Final Report: {len(results)} Accounts Evaluated ---")
 
-    # --- 1. Terminal Output (Rich) ---
+    # --- 1. Sort Results ---
+    def sort_key(res)->int:
+        return DECISION_ORDER.get(res.decision, 99)
+    sorted_results = sorted(results, key=sort_key)
+
+    # --- 2. Terminal Output (Rich) ---
     # Get user's base URL for follow links
     base_url = "mastodon.social"  # Default
-    if config.MASTODON_BASE_URL:
+    # --- Use settings object ---
+    if settings.mastodon_base_url:
         # Strip protocol for a cleaner URL
-        base_url = config.MASTODON_BASE_URL.replace("https://", "").replace(
+        base_url = settings.mastodon_base_url.replace("https://", "").replace(
             "http://", ""
         )
 
-    for res in results:
+    for res in sorted_results:
         color = COLOR_MAP.get(res.decision, "white")
         # Pad decision string for alignment (7 chars: "MAYBE", "FOLLOW", "SKIP")
         decision_str = f"[[{color}]{res.decision: <7}[/]]"
@@ -48,15 +70,25 @@ def write_report(results: List[EvaluationResult], output_file: str | None = None
         rprint(f"  Discovered via: {', '.join(res.dossier.discovered_via)}")
         rprint(f"  Reasoning: {res.reasoning.splitlines()[0]}")  # First line
 
-    # --- 2. File Output (Unchanged) ---
+    # --- 3. Discard Summary ---
+    rprint("\n[bold]--- Filter Discard Summary ---[/bold]")
+    if not discard_counts:
+        rprint("No accounts were discarded by pre-LLM filters.")
+    else:
+        for reason, count in sorted(discard_counts.items()):
+            rprint(f"- [bold]{reason}[/bold]: {count} account(s)")
+
+    # --- 4. File Output ---
+    # --- Use settings object ---
+    output_file = settings.output_file
     if output_file:
         log.info(f"Writing full report to {output_file}...")
         try:
             if output_file.endswith(".csv"):
-                _write_csv(results, output_file)
+                _write_csv(sorted_results, output_file)
             else:
                 # Default to Markdown
-                _write_md(results, output_file)
+                _write_md(sorted_results, output_file)
         except Exception as e:
             log.error(f"Failed to write report file: {e}")
             raise
@@ -68,7 +100,8 @@ def _write_md(results: List[EvaluationResult], filename: str) -> None:
         f.write("# Mastodon Finder Report\n\n")
         f.write(f"Processed {len(results)} accounts.\n\n")
 
-        for res in sorted(results, key=lambda r: r.decision):
+        # List is now pre-sorted by write_report
+        for res in results:
             d = res.dossier
             f.write(f"## [{res.decision}] {d.display_name} (`{d.acct}`)\n\n")
             f.write(f"- **URL**: {d.url}\n")
@@ -101,7 +134,7 @@ def _write_csv(results: List[EvaluationResult], filename: str) -> None:
                 "bio",
             ]
         )
-        # Rows
+        # Rows (list is now pre-sorted by write_report)
         for res in results:
             d = res.dossier
             writer.writerow(

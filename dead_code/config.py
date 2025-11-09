@@ -58,6 +58,16 @@ FILTER_LINK_ONLY = True
 # 1.0 = 100% of posts, 0.9 = 90% of posts
 LINK_ONLY_THRESHOLD = 0.9
 
+# --- "Friend Full Up" Filter (NEW) ---
+# Skip accounts that follow too many, are followed by too many,
+# and have a low follow-back ratio (followers / following)
+FILTER_FRIEND_FULL_UP = True
+FRIEND_FULL_MAX_FOLLOWING = 5000 # people that can't meaningfully follow back because their feed is a flood
+FRIEND_FULL_MAX_FOLLOWERS = 5000 # celebrities. This many or may not be a problem
+# e.g., 0.25 = followers are < 25% of following
+FRIEND_FULL_MIN_RATIO = 0.25
+
+
 # --- LLM Settings ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL")
@@ -69,7 +79,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Default model to use if OPENROUTER_MODEL is not set
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 # API call settings
-LLM_TEMPERATURE = 0.5
+LLM_TEMPERATURE = 0
 LLM_TIMEOUT = 30  # seconds
 
 

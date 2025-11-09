@@ -2,12 +2,12 @@
 import logging
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 import openai
 
-import mastodon_finder.config as config
 from mastodon_finder.enrich import AccountDossier
+from mastodon_finder.settings import Settings
 
 log = logging.getLogger(__name__)
 
@@ -24,43 +24,63 @@ class EvaluationResult:
 
 
 # --- LLM Client Initialization ---
-# Determine API key and base URL
-# Prioritize OpenRouter, fallback to OpenAI
-api_key_to_use = config.OPENROUTER_API_KEY or config.OPENAI_API_KEY
-base_url_to_use = config.OPENROUTER_BASE_URL or None  # None defaults to OpenAI
+# This will be our singleton
+_LLM_CLIENT_SINGLETON: Optional[openai.OpenAI] = None
+_MODEL_TO_USE: str = ""
+_LLM_TIMEOUT: int = 30
+_LLM_TEMPERATURE: float = 0.0
 
-# Determine model
-if config.OPENROUTER_MODEL:
-    model_to_use = config.OPENROUTER_MODEL
-else:
-    model_to_use = config.DEFAULT_OPENAI_MODEL
 
-# Instantiate the client
-# This is done at the module level so it's shared
-llm_client = None
-if api_key_to_use:
-    llm_client = openai.OpenAI(
-        api_key=api_key_to_use,
-        base_url=base_url_to_use,
-    )
-    log.info(
-        f"Initialized LLM client. Model: '{model_to_use}', Base URL: '{base_url_to_use or 'default OpenAI'}'"
-    )
-else:
-    log.warning("LLM client not initialized: No API key found. (OK for --dry-run)")
+def _initialize_llm_client(settings: Settings):
+    """Initializes the LLM client singleton."""
+    global _LLM_CLIENT_SINGLETON, _MODEL_TO_USE, _LLM_TIMEOUT, _LLM_TEMPERATURE
+
+    if _LLM_CLIENT_SINGLETON:
+        return  # Already initialized
+
+    env = settings.env
+    llm_config = settings.llm
+
+    # Determine API key and base URL
+    api_key_to_use = env.OPENROUTER_API_KEY or env.OPENAI_API_KEY
+    base_url_to_use = env.OPENROUTER_BASE_URL or None
+
+    # Determine model
+    if env.OPENROUTER_MODEL:
+        _MODEL_TO_USE = env.OPENROUTER_MODEL
+    else:
+        _MODEL_TO_USE = llm_config.default_openai_model
+
+    # Store other settings
+    _LLM_TIMEOUT = llm_config.timeout
+    _LLM_TEMPERATURE = llm_config.temperature
+
+    if api_key_to_use:
+        _LLM_CLIENT_SINGLETON = openai.OpenAI(
+            api_key=api_key_to_use,
+            base_url=base_url_to_use,
+        )
+        log.info(
+            f"Initialized LLM client. Model: '{_MODEL_TO_USE}', Base URL: '{base_url_to_use or 'default OpenAI'}'"
+        )
+    else:
+        log.warning("LLM client not initialized: No API key found. (OK for --dry-run)")
 
 
 # --- LLM Runner (Real) ---
-def run_llm(system_prompt: str, user_prompt: str) -> str:
+def run_llm(system_prompt: str, user_prompt: str, settings: Settings) -> str:
     """
     Calls the configured LLM (OpenAI or OpenRouter)
     with the provided system and user prompts.
     """
-    if not llm_client:
+    # Initialize client on first call
+    _initialize_llm_client(settings)
+
+    if not _LLM_CLIENT_SINGLETON:
         log.error("LLM client is not initialized. Cannot make API call.")
         return "DECISION: ERROR\nREASONING: LLM client not initialized. Check API keys."
 
-    log.info(f"Calling LLM (model: {model_to_use})...")
+    log.info(f"Calling LLM (model: {_MODEL_TO_USE})...")
 
     # Log the prompts that will be sent
     print("\n" + "=" * 20 + " LLM SYSTEM PROMPT " + "=" * 20)
@@ -70,14 +90,14 @@ def run_llm(system_prompt: str, user_prompt: str) -> str:
     print("=" * 62 + "\n")
 
     try:
-        response = llm_client.chat.completions.create(
-            model=model_to_use,
+        response = _LLM_CLIENT_SINGLETON.chat.completions.create(
+            model=_MODEL_TO_USE,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=config.LLM_TEMPERATURE,
-            timeout=config.LLM_TIMEOUT,
+            temperature=_LLM_TEMPERATURE,
+            timeout=_LLM_TIMEOUT,
         )
 
         output = response.choices[0].message.content
@@ -88,7 +108,7 @@ def run_llm(system_prompt: str, user_prompt: str) -> str:
         return output
 
     except openai.APITimeoutError:
-        log.error(f"LLM call timed out after {config.LLM_TIMEOUT}s.")
+        log.error(f"LLM call timed out after {_LLM_TIMEOUT}s.")
         return "DECISION: ERROR\nREASONING: LLM call timed out."
     except openai.APIConnectionError as e:
         log.error(f"LLM connection error: {e}")

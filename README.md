@@ -52,3 +52,5 @@ Bad profile search and bad search has been touted as an intentional privacy feat
 
 - [Trunk](https://communitywiki.org/trunk)
 - [Fedi.Directory](https://fedi.directory/)
+
+Just a bunch of sheets https://researchbuzz.me/2022/11/05/a-big-list-of-mastodon-resources/
