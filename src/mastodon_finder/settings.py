@@ -1,16 +1,11 @@
 # mastodon_finder/settings.py
 import argparse
 import sys
+from pathlib import Path
 from typing import Dict, List, Optional
 
-
 import tomli
-from pathlib import Path
-from pydantic import (
-    BaseModel,
-    Field,
-    ValidationError,
-)
+from pydantic import BaseModel, Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +33,7 @@ class EnvironmentSettings(BaseSettings):
 # --- Models for TOML configuration ---
 # These models represent the structure in finder.toml
 
+
 class DiscoveryConfig(BaseModel):
     keywords: List[str] = Field(
         default=["golang", "ruby", "cobol", "c++", "rust", "typescript"]
@@ -56,7 +52,7 @@ class DiscoveryConfig(BaseModel):
 
 class LimitsConfig(BaseModel):
     max_accounts: int = Field(default=200, gt=0)
-    max_statuses: int = Field(default=120, gt=0)
+    max_statuses: int = Field(default=200, gt=0)
     max_pages: int = Field(default=4, gt=0)
     follow_target_limit: int = Field(default=-1)
 
@@ -79,12 +75,15 @@ class FilterConfig(BaseModel):
     friend_full_up: FriendFullUpFilterConfig = Field(
         default_factory=FriendFullUpFilterConfig
     )
+    max_posts_per_year: int = Field(default=15000, gt=0)
+    reject_bio_keywords: List[str] = Field(default=[])
+    filter_no_bio: bool = Field(default=True)
+    min_account_age_days: int = Field(default=30, ge=0)
 
 
 class LLMConfig(BaseModel):
-    topics: List[str] = Field(
-        default=["software developer, software engineer, coder"]
-    )
+    enable: bool = Field(default=True)
+    topics: List[str] = Field(default=["software developer, software engineer, coder"])
     default_openai_model: str = Field(default="gpt-4o-mini")
     temperature: float = Field(default=0, ge=0, le=2)
     timeout: int = Field(default=30, gt=0)
@@ -92,6 +91,7 @@ class LLMConfig(BaseModel):
 
 # --- Main Configuration Model ---
 # This model combines all config sources
+
 
 class Settings(BaseModel):
     """
@@ -116,6 +116,18 @@ class Settings(BaseModel):
     yes: bool = Field(default=False)  # For skipping confirmation
 
     # --- Computed Properties ---
+    @property
+    def llm_enabled(self) -> bool:  # <-- ADD THIS HELPER
+        """Returns True if LLM is enabled and not a dry run."""
+        if self.dry_run:
+            return True  # Dry run still needs to build prompts
+        return self.llm.enable
+
+    @property
+    def llm_really_disabled(self) -> bool:  # <-- ADD THIS HELPER
+        """Returns True if LLM is fully disabled (not just dry run)."""
+        return not self.llm.enable
+
     @property
     def mastodon_base_url(self) -> Optional[str]:
         return self.env.MASTODON_BASE_URL
@@ -150,9 +162,8 @@ class Settings(BaseModel):
         if not self.env.OPENROUTER_API_KEY and not self.env.OPENAI_API_KEY:
             print("Warning: Neither OPENROUTER_API_KEY nor OPENAI_API_KEY is set.")
             print("         LLM calls will fail.")
-        elif (
-            self.env.OPENROUTER_API_KEY
-            and (not self.env.OPENROUTER_BASE_URL or not self.env.OPENROUTER_MODEL)
+        elif self.env.OPENROUTER_API_KEY and (
+            not self.env.OPENROUTER_BASE_URL or not self.env.OPENROUTER_MODEL
         ):
             print(
                 "Warning: OPENROUTER_API_KEY is set, but OPENROUTER_BASE_URL or OPENROUTER_MODEL is missing."
@@ -235,6 +246,8 @@ def merge_cli_args(settings: Settings, cli_args: "argparse.Namespace") -> None:
     # --- LLM ---
     if cli_args.topics is not None:
         settings.llm.topics = cli_args.topics
+    if cli_args.llm_enable is not None:
+        settings.llm.enable = cli_args.llm_enable
 
     # --- Top-level CLI args ---
     if cli_args.output_file is not None:

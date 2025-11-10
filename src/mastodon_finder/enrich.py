@@ -127,7 +127,6 @@ def build_dossier(
         note_text=note_text,
         fields=profile_fields,
         discovered_via=discovery_reasons,
-        # MODIFIED: Add new fields
         bot=acct.bot,
         reply_posts_found=replies_found,
         recent_posts=recent_posts,

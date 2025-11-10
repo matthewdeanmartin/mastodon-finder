@@ -1,15 +1,13 @@
 # mastodon_finder/prompt_builder.py
 from typing import Tuple
 
-
 from mastodon_finder.enrich import AccountDossier
 from mastodon_finder.settings import Settings
 
 
 def build_prompt(
-        dossier: AccountDossier,
-        # --- Modified Signature ---
-        settings: Settings,
+    dossier: AccountDossier,
+    settings: Settings,
 ) -> Tuple[str, str]:
     """
     Converts an AccountDossier into system and user prompts
@@ -47,7 +45,8 @@ def build_prompt(
     # --- [RECENT ORIGINAL POSTS] Section ---
     post_lines = ["\n[RECENT ORIGINAL POSTS]"]
     if dossier.recent_posts:
-        for i, (timestamp, text, language) in enumerate(dossier.recent_posts, 1):
+        # TODO: why ignoring language?
+        for i, (timestamp, text, _language) in enumerate(dossier.recent_posts, 1):
             # Limit post length for prompt tokens
             short_text = (text[:250] + "...") if len(text) > 250 else text
             post_lines.append(
@@ -83,14 +82,16 @@ def build_prompt(
     if lang_filter != "none":
         rubric_lines.append(f"- Language is primarily not {lang_filter}")
 
-    rubric_lines.extend([
-        "",
-        "Respond *only* in this exact format:",
-        "DECISION: <FOLLOW|MAYBE|SKIP>",
-        "REASONING:",
-        "- ...",
-        "- ...",
-    ])
+    rubric_lines.extend(
+        [
+            "",
+            "Respond *only* in this exact format:",
+            "DECISION: <FOLLOW|MAYBE|SKIP>",
+            "REASONING:",
+            "- ...",
+            "- ...",
+        ]
+    )
 
     # Combine all parts
     user_prompt = "\n".join(account_lines + bio_lines + field_lines + post_lines)

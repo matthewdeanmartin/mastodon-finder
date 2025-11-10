@@ -31,7 +31,6 @@ DECISION_ORDER = {
 def write_report(
     results: List[EvaluationResult],
     discard_counts: Dict[str, int],
-    # --- Modified Signature ---
     settings: Settings,
 ):
     """
@@ -43,8 +42,9 @@ def write_report(
     log.info(f"\n--- Final Report: {len(results)} Accounts Evaluated ---")
 
     # --- 1. Sort Results ---
-    def sort_key(res)->int:
+    def sort_key(res) -> int:
         return DECISION_ORDER.get(res.decision, 99)
+
     sorted_results = sorted(results, key=sort_key)
 
     # --- 2. Terminal Output (Rich) ---

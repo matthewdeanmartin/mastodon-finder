@@ -16,7 +16,6 @@ from mastodon import (
     MastodonRatelimitError,
 )
 
-# --- Modified Import ---
 from mastodon_finder.settings import Settings
 
 # Set up logging
@@ -70,7 +69,6 @@ def _write_to_cache(key: str, data: Any, cache_dir: Path):
             pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
     except Exception as e:
         log.warning(f"Failed to write cache file {cache_file}: {e}")
-
 
 
 def _clean_old_cache_files(max_age_days: int = 5):
@@ -298,9 +296,7 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[Any]:
         return []
 
 
-def search_statuses_by_hashtag(
-    tag: str, max_pages: int, page_size: int
-) -> List[Any]:
+def search_statuses_by_hashtag(tag: str, max_pages: int, page_size: int) -> List[Any]:
     """
     Fetches statuses for a specific hashtag timeline.
     Uses timeline("tag/...") as per cheat sheet.
@@ -315,7 +311,7 @@ def search_statuses_by_hashtag(
     timeline_name = f"tag/{tag.lstrip('#')}"
     data = _fetch_paginated_results(
         fetch_func_name="timeline",
-        page_limit=page_size,  # +++ Pass page_size +++
+        page_limit=page_size,
         max_pages=max_pages,
         timeline=timeline_name,
     )
@@ -352,7 +348,6 @@ def search_accounts_by_keyword(keyword: str) -> List[Any]:
         return []
 
 
-# +++ NEW FUNCTION +++
 def lookup_account_id_by_handle(handle: str) -> Optional[int]:
     """
     Resolves a Mastodon handle (e.g., @user@server) to an account ID.
@@ -414,7 +409,6 @@ def lookup_account_id_by_handle(handle: str) -> Optional[int]:
         return None
 
 
-# +++ NEW FUNCTION +++
 def get_account_followers(account_id: int, max_followers: int) -> List[Any]:
     """
     Fetches the followers of a given account, up to max_followers.

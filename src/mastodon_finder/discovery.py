@@ -3,14 +3,12 @@ import logging
 from typing import Dict, List, Set
 
 import mastodon_finder.mastodon_client as mastodon_client
-# --- Modified Import ---
 from mastodon_finder.settings import DiscoveryConfig, LimitsConfig
 
 log = logging.getLogger(__name__)
 
 
 def discover_accounts(
-    # --- Modified Signature ---
     disc_config: DiscoveryConfig,
     limits_config: LimitsConfig,
 ) -> Dict[int, List[str]]:
@@ -61,7 +59,7 @@ def discover_accounts(
             except Exception as e:
                 log.warning(f"Could not parse account from profile search: {e}")
 
-    # +++ NEW: 4. Search by Follow Targets +++
+    # 4. Search by Follow Targets
     for handle in disc_config.follow_targets:
         log.info(f"Looking up target account: {handle}")
         target_id = mastodon_client.lookup_account_id_by_handle(handle)
@@ -75,9 +73,7 @@ def discover_accounts(
             f"Fetching {limit if limit != -1 else 'all'} "
             f"followers for {handle} (ID: {target_id})..."
         )
-        followers = mastodon_client.get_account_followers(
-            target_id, limit
-        )
+        followers = mastodon_client.get_account_followers(target_id, limit)
 
         log.info(f"Found {len(followers)} followers for {handle}.")
         for account in followers:

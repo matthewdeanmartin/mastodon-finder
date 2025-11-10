@@ -9,7 +9,6 @@ from typing import Dict, List, Tuple
 
 from rich import print as rprint
 
-# --- Modified Imports ---
 import mastodon_finder.discovery as discovery
 import mastodon_finder.enrich as enrich
 import mastodon_finder.llm_runner as llm_runner
@@ -17,6 +16,7 @@ import mastodon_finder.mastodon_client as mastodon_client
 import mastodon_finder.prompt_builder as prompt_builder
 import mastodon_finder.report as report
 from mastodon_finder.enrich import AccountDossier
+
 # Import the new settings and init modules
 from mastodon_finder.init import create_default_config
 from mastodon_finder.settings import Settings, load_settings
@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 def _pre_llm_filter(
-        dossiers: List[AccountDossier], settings: Settings
+    dossiers: List[AccountDossier], settings: Settings
 ) -> Tuple[List[AccountDossier], Dict[str, int]]:
     """
     Applies all pre-LLM filtering rules based on the Settings object.
@@ -35,7 +35,6 @@ def _pre_llm_filter(
     final_dossiers = []
     discard_counts: Dict[str, int] = {}
 
-    # +++ Use settings object +++
     filters = settings.filters
     limits = settings.limits
 
@@ -74,9 +73,7 @@ def _pre_llm_filter(
                 continue
             if lang_filter not in post_langs:
                 reason = f"Language Mismatch (Not '{lang_filter}')"
-                log.info(
-                    f"Skipping {d.acct}: {reason}. Found: {post_langs}"
-                )
+                log.info(f"Skipping {d.acct}: {reason}. Found: {post_langs}")
                 discard_counts.setdefault(reason, 0)
                 discard_counts[reason] += 1
                 continue
@@ -136,9 +133,9 @@ def _pre_llm_filter(
                 follow_back_ratio = d.followers_count / d.following_count
 
                 if (
-                        d.following_count > ffu.max_following
-                        and d.followers_count > ffu.max_followers
-                        and follow_back_ratio < ffu.min_follow_back_ratio
+                    d.following_count > ffu.max_following
+                    and d.followers_count > ffu.max_followers
+                    and follow_back_ratio < ffu.min_follow_back_ratio
                 ):
                     reason = "Friend Full Up"
                     log.info(
@@ -148,6 +145,58 @@ def _pre_llm_filter(
                     discard_counts.setdefault(reason, 0)
                     discard_counts[reason] += 1
                     continue
+
+        # Filter 9: Too-Chatty Filter
+        # Calculate account age in days, ensure at least 1 to avoid ZeroDivisionError
+        age_in_days = (datetime.now(timezone.utc) - d.created_at).days
+        if age_in_days < 1:
+            age_in_days = 1
+
+        # Calculate average posts per year
+        posts_per_year = (d.statuses_count / age_in_days) * 365.25
+
+        if posts_per_year > filters.max_posts_per_year:
+            reason = "Too Chatty"
+            log.info(
+                f"Skipping {d.acct}: {reason} (found {posts_per_year:.0f} posts/year, limit is {filters.max_posts_per_year})."
+            )
+            discard_counts.setdefault(reason, 0)
+            discard_counts[reason] += 1
+            continue
+
+        # Filter 10: Negative bio keywords
+        if filters.reject_bio_keywords:
+            full_text = f"{d.display_name} {d.note_text}".lower()
+            found_keyword = None
+            for keyword in filters.reject_bio_keywords:
+                if keyword.lower() in full_text:
+                    found_keyword = keyword
+                    break
+
+            if found_keyword:
+                reason = "Rejected Keyword in Bio"
+                log.info(f"Skipping {d.acct}: {reason} (found '{found_keyword}').")
+                discard_counts.setdefault(reason, 0)
+                discard_counts[reason] += 1
+                continue
+
+        # Filter 11: Check if note_text is None or just whitespace
+        if filters.filter_no_bio and not d.note_text.strip():
+            reason = "Empty Bio"
+            log.info(f"Skipping {d.acct}: {reason}.")
+            discard_counts.setdefault(reason, 0)
+            discard_counts[reason] += 1
+            continue
+
+        # Filter 12: (You already calculated age_in_days for the "Too Chatty" filter)
+        if age_in_days < filters.min_account_age_days:
+            reason = "Account Too New"
+            log.info(
+                f"Skipping {d.acct}: {reason} (age {age_in_days} days, min is {filters.min_account_age_days})."
+            )
+            discard_counts.setdefault(reason, 0)
+            discard_counts[reason] += 1
+            continue
 
         # If all filters passed:
         final_dossiers.append(d)
@@ -173,6 +222,9 @@ def _confirm_run_settings(settings: Settings):
 
     # LLM
     rprint(f"\n[bold]LLM Topics:[/bold] {settings.llm.topics}")
+    rprint(
+        f"- LLM Evaluation: {'Enabled' if settings.llm.enable else '[yellow]Disabled (pre-filter only)[/yellow]'}"
+    )
 
     # Limits
     rprint("\n[bold]Limits:[/bold]")
@@ -223,12 +275,21 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         "init", help="Create a default 'finder.toml' config file."
     )
 
+    # --- 'auth' command ---  <-- ADD THIS BLOCK
+    _parser_auth = subparsers.add_parser(
+        "auth", help="Run interactive auth flow to get Mastodon API keys."
+    )
+
     # --- 'run' command ---
     parser_run = subparsers.add_parser(
         "run", help="Run the discovery tool (default command)."
     )
     # Make 'run' the default
-    parser.set_defaults(command="run")
+    # --- Check if a command was given. If not, default to 'run'.
+    # This is a bit more robust than parser.set_defaults
+    if len(sys.argv) == 1:
+        sys.argv.append("run")
+    # parser.set_defaults(command="run") # This can be tricky with subparsers
 
     # --- Arguments for 'run' command ---
     # Set all defaults to None so we can detect if they were set
@@ -300,135 +361,199 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         help="Skip confirmation prompt",
     )
 
+    parser_run.add_argument(
+        "--no-llm",
+        dest="llm_enable",
+        action="store_false",
+        default=None,
+        help="Disable LLM evaluation (run discovery and pre-filters only)",
+    )
+    parser_run.add_argument(
+        "--llm",
+        dest="llm_enable",
+        action="store_true",
+        default=None,
+        help="Force enable LLM evaluation (overrides finder.toml)",
+    )
+
     return parser
 
 
 def main():
     parser = setup_arg_parser()
+
+    # Handle the case where no command is given, default to 'run'
+    # This is needed because `dest="command"` with subparsers can return None
     args = parser.parse_args()
+    if args.command is None:
+        args.command = "run"
+        # We need to re-parse *within the context of 'run'*
+        # This is a quirk of argparse.
+        # A simpler way is to just default to 'run' if no command is specified
+        # We'll handle this by re-parsing if args.command is None.
+        # Let's adjust the arg parser logic slightly.
+
+    # --- Re-setup parser logic for robustness ---
+    parser = setup_arg_parser()
+    args = parser.parse_args()
+    if args.command is None:
+        # If no command (e.g., just `python -m mastodon_finder`), default to 'run'
+        # and re-parse to apply 'run's arguments
+        args = parser.parse_args(["run"] + sys.argv[1:])
 
     # --- Handle 'init' command ---
     if args.command == "init":
         create_default_config()
         sys.exit(0)
 
+    # --- Handle 'auth' command ---  <-- ADD THIS BLOCK
+    if args.command == "auth":
+        # Import dynamically to avoid circular dependencies
+        # and keep auth logic separate
+        import mastodon_finder.auth
+
+        mastodon_finder.auth.run_auth_flow()
+        sys.exit(0)
+
     # --- Handle 'run' command (default) ---
     # 1. Load, merge, and validate settings
-    settings = load_settings(args)
+    if args.command == "run":
+        settings = load_settings(args)
 
-    # 2. Confirm Run Settings (if not --yes)
-    if not settings.yes:
-        _confirm_run_settings(settings)
+        # 2. Confirm Run Settings (if not --yes)
+        if not settings.yes:
+            _confirm_run_settings(settings)
 
-    # 3. Initialize Mastodon client (this is the first network call)
-    try:
-        log.info("Initializing Mastodon client...")
-        # Pass settings to the client on first call
-        mastodon_client.get_client(settings)
+        # 3. Initialize Mastodon client (this is the first network call)
+        try:
+            log.info("Initializing Mastodon client...")
+            # Pass settings to the client on first call
+            mastodon_client.get_client(settings)
 
-        log.info("Fetching list of accounts you already follow...")
-        following_ids = mastodon_client.get_my_following_ids()
-        log.info(
-            f"Found {len(following_ids)} accounts you follow. These will be skipped."
-        )
-
-        my_id = mastodon_client._get_my_account_id()
-        if my_id:
-            following_ids.add(my_id)
-            log.info(f"Ensuring 'self' account (ID: {my_id}) is also skipped.")
-
-    except ConnectionError as e:
-        log.error(f"Application failed to start: {e}")
-        sys.exit(1)
-    except Exception as e:
-        log.error(f"Failed to fetch following list: {e}.")
-        following_ids = set()
-        sys.exit(2)
-
-    # --- Main Application Flow ---
-    log.info("--- Starting mastodon-finder ---")
-    log.info(f"Post Keywords: {settings.discovery.keywords}")
-    log.info(f"Post Hashtags: {settings.discovery.hashtags}")
-    log.info(f"Profile Keywords: {settings.discovery.profile_keywords}")
-    log.info(f"Profile Hashtags: {settings.discovery.profile_hashtags}")
-    log.info(f"Follow Targets: {settings.discovery.follow_targets}")
-    log.info(f"LLM Topics: {settings.llm.topics}")
-
-    try:
-        # 1. Discovery Phase
-        candidates = discovery.discover_accounts(
-            settings.discovery,
-            settings.limits,
-        )
-        if not candidates:
-            log.info("No candidates found. Exiting.")
-            return
-
-        # --- Filter Already Followed (and self) ---
-        filtered_candidates = {}
-        skipped_count = 0
-        for account_id, reasons in candidates.items():
-            if account_id in following_ids:
-                skipped_count += 1
-                continue
-            else:
-                filtered_candidates[account_id] = reasons
-
-        log.info(f"Discovered {len(candidates)} total candidates.")
-        log.info(f"Skipping {skipped_count} accounts (followed or self).")
-        log.info(f"Enriching {len(filtered_candidates)} new candidates.")
-
-        if not filtered_candidates:
-            log.info("No new candidates to process. Exiting.")
-            return
-
-        # 2. Enrichment Phase
-        dossiers = enrich.build_dossiers(
-            filtered_candidates,
-            settings.limits.max_statuses,
-            settings.limits.max_accounts,
-        )
-
-        # 3. Pre-LLM Filtering
-        final_dossiers, discard_counts = _pre_llm_filter(dossiers, settings)
-        log.info(f"Processing {len(final_dossiers)} active, filtered candidates.")
-
-        # 4. Evaluation Phase (LLM)
-        results = []
-        for dossier in final_dossiers:
-            # 4a. Build Prompt
-            system_prompt, user_prompt = prompt_builder.build_prompt(
-                dossier, settings
+            log.info("Fetching list of accounts you already follow...")
+            following_ids = mastodon_client.get_my_following_ids()
+            log.info(
+                f"Found {len(following_ids)} accounts you follow. These will be skipped."
             )
 
-            if settings.dry_run:
-                print(f"\n--- [DRY RUN] System Prompt for {dossier.acct} ---")
-                print(system_prompt)
-                print(f"\n--- [DRY RUN] User Prompt for {dossier.acct} ---")
-                print(user_prompt)
-                print("--- [DRY RUN] End Prompt ---")
-                results.append(
-                    llm_runner.EvaluationResult(dossier, "MAYBE", "DRY_RUN")
+            my_id = mastodon_client._get_my_account_id()
+            if my_id:
+                following_ids.add(my_id)
+                log.info(f"Ensuring 'self' account (ID: {my_id}) is also skipped.")
+
+        except ConnectionError as e:
+            log.error(f"Application failed to start: {e}")
+            sys.exit(1)
+        except Exception as e:
+            log.error(f"Failed to fetch following list: {e}.")
+            following_ids = set()
+            sys.exit(2)
+
+        # --- Main Application Flow ---
+        log.info("--- Starting mastodon-finder ---")
+        log.info(f"Post Keywords: {settings.discovery.keywords}")
+        log.info(f"Post Hashtags: {settings.discovery.hashtags}")
+        log.info(f"Profile Keywords: {settings.discovery.profile_keywords}")
+        log.info(f"Profile Hashtags: {settings.discovery.profile_hashtags}")
+        log.info(f"Follow Targets: {settings.discovery.follow_targets}")
+        log.info(f"LLM Topics: {settings.llm.topics}")
+
+        try:
+            # 1. Discovery Phase
+            candidates = discovery.discover_accounts(
+                settings.discovery,
+                settings.limits,
+            )
+            if not candidates:
+                log.info("No candidates found. Exiting.")
+                return
+
+            # --- Filter Already Followed (and self) ---
+            filtered_candidates = {}
+            skipped_count = 0
+            for account_id, reasons in candidates.items():
+                if account_id in following_ids:
+                    skipped_count += 1
+                    continue
+                else:
+                    filtered_candidates[account_id] = reasons
+
+            log.info(f"Discovered {len(candidates)} total candidates.")
+            log.info(f"Skipping {skipped_count} accounts (followed or self).")
+            log.info(f"Enriching {len(filtered_candidates)} new candidates.")
+
+            if not filtered_candidates:
+                log.info("No new candidates to process. Exiting.")
+                return
+
+            # 2. Enrichment Phase
+            dossiers = enrich.build_dossiers(
+                filtered_candidates,
+                settings.limits.max_statuses,
+                settings.limits.max_accounts,
+            )
+
+            # 3. Pre-LLM Filtering
+            final_dossiers, discard_counts = _pre_llm_filter(dossiers, settings)
+            log.info(f"Processing {len(final_dossiers)} active, filtered candidates.")
+
+            # 4. Evaluation Phase (LLM)
+            results = []
+            if settings.llm.enable:
+                log.info(
+                    f"--- Starting Evaluation Phase ({len(final_dossiers)} candidates) ---"
                 )
-                continue
 
-            # 4b. Run LLM (pass settings for initialization)
-            llm_output = llm_runner.run_llm(system_prompt, user_prompt, settings)
+                for dossier in final_dossiers:
+                    # 4a. Build Prompt
+                    system_prompt, user_prompt = prompt_builder.build_prompt(
+                        dossier, settings
+                    )
 
-            # 4c. Parse Result
-            result = llm_runner.parse_llm_output(dossier, llm_output)
-            results.append(result)
+                    if settings.dry_run:
+                        print(f"\n--- [DRY RUN] System Prompt for {dossier.acct} ---")
+                        print(system_prompt)
+                        print(f"\n--- [DRY RUN] User Prompt for {dossier.acct} ---")
+                        print(user_prompt)
+                        print("--- [DRY RUN] End Prompt ---")
+                        results.append(
+                            llm_runner.EvaluationResult(dossier, "MAYBE", "DRY_RUN")
+                        )
+                        continue
 
-        # 5. Output Phase
-        if results:
-            report.write_report(results, discard_counts, settings)
-        else:
-            log.info("No active accounts were processed.")
+                    # 4b. Run LLM (pass settings for initialization)
+                    llm_output = llm_runner.run_llm(
+                        system_prompt, user_prompt, settings
+                    )
 
-    except ConnectionError as e:
-        # This catches the lazy-init failure from get_client()
-        log.error(f"Application failed to start: {e}")
-        sys.exit(1)
+                    # 4c. Parse Result
+                    result = llm_runner.parse_llm_output(dossier, llm_output)
+                    results.append(result)
+
+            else:
+                # LLM is disabled. Convert all passed dossiers directly to results.
+                log.info(
+                    "LLM evaluation is disabled. Generating report from pre-filtered accounts."
+                )
+                for dossier in final_dossiers:
+                    results.append(
+                        llm_runner.EvaluationResult(
+                            dossier=dossier,
+                            decision="MAYBE",  # Use MAYBE as a neutral default
+                            reasoning="LLM evaluation was disabled.",
+                        )
+                    )
+
+            # 5. Output Phase
+            if results:
+                report.write_report(results, discard_counts, settings)
+            else:
+                log.info("No active accounts were processed.")
+
+        except ConnectionError as e:
+            # This catches the lazy-init failure from get_client()
+            log.error(f"Application failed to start: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

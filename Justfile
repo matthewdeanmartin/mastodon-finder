@@ -64,7 +64,9 @@ ruff-fix:
 pylint: black ruff-fix 	
 	@echo "Linting with pylint"
 	# Run pylint on all packages in src and the test directory
-	{{venv}} pylint {{PACKAGES}} test --fail-under 9.9 --rcfile=.pylintrc
+	{{venv}} pylint {{PACKAGES}} --fail-under 9.9 --rcfile=.pylintrc
+	{{venv}} pylint test --fail-under 9.9 --rcfile=.pylintrc_tests
+
 
 bandit: 	
 	@echo "Security checks"
@@ -85,7 +87,7 @@ test: clean uv-lock install-plugins
 	# Run doctests on all packages in src
 	# {{venv}} pytest --doctest-modules {{PACKAGES}}
 	# Run unit tests and generate coverage for the entire src directory
-	{{venv}} py.test test -vv -n auto \
+	{{venv}} py.test test -vv -n 1 \
 	  --cov=src --cov-report=html --cov-fail-under 12 --cov-branch \
 	  --cov-report=xml --junitxml=junit.xml -o junit_family=legacy \
 	  --timeout=5 --session-timeout=600

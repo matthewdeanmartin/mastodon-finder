@@ -1,4 +1,3 @@
-# mastodon_finder/__about__.py
 """Metadata for mastodon-finder."""
 
 __all__ = [

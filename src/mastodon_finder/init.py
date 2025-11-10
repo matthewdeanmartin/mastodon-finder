@@ -35,7 +35,7 @@ TOML_TEMPLATE = """
 max_accounts = 200
 
 # Max original statuses to fetch per account for the dossier
-max_statuses = 120
+max_statuses = 200
 
 # Max pages of results to fetch per keyword/hashtag
 max_pages = 4
@@ -67,6 +67,19 @@ filter_link_only = true
 # Percentage of posts that must be links to trigger filter_link_only
 # 1.0 = 100% of posts, 0.9 = 90% of posts
 link_only_threshold = 0.9
+
+# Skip accounts that have no bio text
+filter_no_bio = true
+
+# Skip accounts newer than this many days
+min_account_age_days = 30
+
+# Skip accounts if their bio or display name contains any of these keywords (case-insensitive)
+# reject_bio_keywords = ["crypto", "nft", "marketing guru"]
+
+# Skip accounts that post more than this many times per year
+max_posts_per_year = 15000
+
 
 [filters.friend_full_up]
 # Enable the "friend full up" filter
@@ -110,7 +123,7 @@ def create_default_config():
         print(f"'{CONFIG_FILENAME}' already exists. Skipping creation.")
     else:
         try:
-            config_file.write_text(TOML_TEMPLATE.strip())
+            config_file.write_text(TOML_TEMPLATE.strip(), encoding="utf-8")
             print(f"Created default config file: '{CONFIG_FILENAME}'")
         except Exception as e:
             log.error(f"Failed to create config file: {e}")
@@ -119,15 +132,15 @@ def create_default_config():
     # 2. Add to .gitignore
     if not gitignore_file.exists():
         try:
-            gitignore_file.write_text(GITIGNORE_LINE.strip())
+            gitignore_file.write_text(GITIGNORE_LINE.strip(), encoding="utf-8")
             print("Created '.gitignore' and added config file to it.")
         except Exception as e:
             log.error(f"Failed to create .gitignore: {e}")
     else:
         try:
-            content = gitignore_file.read_text()
+            content = gitignore_file.read_text(encoding="utf-8")
             if CONFIG_FILENAME not in content:
-                with open(gitignore_file, "a") as f:
+                with open(gitignore_file, "a", encoding="utf-8") as f:
                     f.write(GITIGNORE_LINE)
                 print(f"Added '{CONFIG_FILENAME}' to existing '.gitignore'.")
             else:
