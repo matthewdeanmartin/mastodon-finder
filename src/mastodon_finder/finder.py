@@ -1,7 +1,10 @@
 # mastodon_finder/finder.py
 
+from __future__ import annotations
+
 import argparse
 import logging
+import logging.config
 import re
 import sys
 from datetime import datetime, timedelta, timezone
@@ -15,11 +18,14 @@ import mastodon_finder.llm_runner as llm_runner
 import mastodon_finder.mastodon_client as mastodon_client
 import mastodon_finder.prompt_builder as prompt_builder
 import mastodon_finder.report as report
+from mastodon_finder.__about__ import __version__
 from mastodon_finder.enrich import AccountDossier
 
 # Import the new settings and init modules
 from mastodon_finder.init import create_default_config
 from mastodon_finder.settings import Settings, load_settings
+from mastodon_finder.utils.cli_suggestions import SmartParser
+from mastodon_finder.utils.logging_config import generate_config
 
 log = logging.getLogger(__name__)
 
@@ -264,9 +270,21 @@ def _confirm_run_settings(settings: Settings):
 
 def setup_arg_parser() -> argparse.ArgumentParser:
     """Sets up the argparse.ArgumentParser with subparsers."""
-    parser = argparse.ArgumentParser(
-        description="Mastodon account discovery and scoring tool."
+    parser = SmartParser(description="Mastodon account discovery and scoring tool.")
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
     )
+
+    # # --- Setup Logging ---
+    # if args.verbose:
+    #     log_level = "DEBUG"
+    # elif args.quiet:
+    #     log_level = "CRITICAL"
+    # else:
+    #     log_level = "INFO"
+    log_level = "INFO"
+    logging.config.dictConfig(generate_config(level=log_level))
+
     # Use subparsers
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

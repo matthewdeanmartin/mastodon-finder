@@ -1,4 +1,7 @@
 # mastodon_finder/llm_runner.py
+
+from __future__ import annotations
+
 import logging
 import re
 from dataclasses import dataclass

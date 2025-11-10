@@ -1,4 +1,7 @@
 # mastodon_finder/mastodon_client.py
+
+from __future__ import annotations
+
 import hashlib
 import json
 import logging

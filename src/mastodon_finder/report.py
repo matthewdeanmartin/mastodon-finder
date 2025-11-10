@@ -1,4 +1,7 @@
 # mastodon_finder/report.py
+
+from __future__ import annotations
+
 import csv
 import logging
 from typing import Dict, List

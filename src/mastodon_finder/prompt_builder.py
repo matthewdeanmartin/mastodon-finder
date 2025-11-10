@@ -1,4 +1,7 @@
 # mastodon_finder/prompt_builder.py
+
+from __future__ import annotations
+
 from typing import Tuple
 
 from mastodon_finder.enrich import AccountDossier

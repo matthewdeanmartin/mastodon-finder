@@ -1,4 +1,7 @@
 # mastodon_finder/settings.py
+
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -35,18 +38,10 @@ class EnvironmentSettings(BaseSettings):
 
 
 class DiscoveryConfig(BaseModel):
-    keywords: List[str] = Field(
-        default=["golang", "ruby", "cobol", "c++", "rust", "typescript"]
-    )
-    hashtags: List[str] = Field(
-        default=["golang", "ruby", "cobol", "c++", "rust", "typescript"]
-    )
-    profile_keywords: List[str] = Field(
-        default=["golang", "ruby", "cobol", "c++", "rust", "typescript"]
-    )
-    profile_hashtags: List[str] = Field(
-        default=["golang", "ruby", "cobol", "c++", "rust", "typescript"]
-    )
+    keywords: List[str] = Field(default=[])
+    hashtags: List[str] = Field(default=[])
+    profile_keywords: List[str] = Field(default=[])
+    profile_hashtags: List[str] = Field(default=[])
     follow_targets: List[str] = Field(default=[])
 
 
@@ -83,7 +78,7 @@ class FilterConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     enable: bool = Field(default=True)
-    topics: List[str] = Field(default=["software developer, software engineer, coder"])
+    topics: List[str] = Field(default=[])
     default_openai_model: str = Field(default="gpt-4o-mini")
     temperature: float = Field(default=0, ge=0, le=2)
     timeout: int = Field(default=30, gt=0)

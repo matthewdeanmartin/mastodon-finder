@@ -1,4 +1,5 @@
 # tests/test_discovery.py
+from __future__ import annotations
 
 from unittest.mock import Mock
 
