@@ -12,7 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed for any bug fixes.
 - Security in case of vulnerabilities.
 
-## [0.1.0] - 2025-11-09
+## [0.1.1] - 2025-11-10
+
+### Fixed
+
+- Config loads as dict, instead of strongly typed
+
+## [0.1.0] - 2025-11-10
 
 
 ### Added

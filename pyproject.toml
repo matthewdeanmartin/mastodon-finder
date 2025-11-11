@@ -1,6 +1,6 @@
 [project]
 name = "mastodon-finder"
-version = "0.1.0"
+version = "0.2.0"
 keywords = ["mastodon"]
 description = "Search for mastodon profiles, use mechanical and LLM filtering."
 readme = "README.md"
@@ -9,7 +9,7 @@ authors = [
 ]
 requires-python = ">=3.8"
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Framework :: Pydantic",
     "Programming Language :: Python",
@@ -34,7 +34,7 @@ classifiers = [
 
 
 dependencies = [
-    "mastodon-py",
+    "mastodon-py>=2.1.4",
     "python-dotenv",
     "beautifulsoup4",
     "openai",
@@ -100,12 +100,12 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/matthewdeanmartin/mastodon_finder"
+Repository = "https://github.com/matthewdeanmartin/mastodon-finder"
 Documentation = "https://mastodon-finder.readthedocs.io/en/latest/"
-Changelog = "https://github.com/matthewdeanmartin/mastodon_finder/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/matthewdeanmartin/mastodon-finder/blob/main/CHANGELOG.md"
 
-homepage = "https://github.com/matthewdeanmartin/mastodon_finder"
-issues = "https://github.com/matthewdeanmartin/mastodon_finder/issues/"
+homepage = "https://github.com/matthewdeanmartin/mastodon-finder"
+issues = "https://github.com/matthewdeanmartin/mastodon-finder/issues/"
 
 
 [project.scripts]

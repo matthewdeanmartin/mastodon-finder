@@ -275,15 +275,20 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
-    # # --- Setup Logging ---
-    # if args.verbose:
-    #     log_level = "DEBUG"
-    # elif args.quiet:
-    #     log_level = "CRITICAL"
-    # else:
-    #     log_level = "INFO"
-    log_level = "INFO"
-    logging.config.dictConfig(generate_config(level=log_level))
+    # Add this group
+    log_group = parser.add_mutually_exclusive_group()
+    log_group.add_argument(
+        "-V",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose DEBUG logging.",
+    )
+    log_group.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress logging output (CRITICAL only).",
+    )
 
     # Use subparsers
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -398,6 +403,9 @@ def setup_arg_parser() -> argparse.ArgumentParser:
 
 
 def main():
+    log_level = "INFO"
+    logging.config.dictConfig(generate_config(level=log_level))
+
     parser = setup_arg_parser()
 
     # Handle the case where no command is given, default to 'run'
@@ -414,6 +422,21 @@ def main():
     # --- Re-setup parser logic for robustness ---
     parser = setup_arg_parser()
     args = parser.parse_args()
+
+    # --- Setup Logging ---
+    if args.verbose:
+        log_level = "DEBUG"
+    elif args.quiet:
+        log_level = "CRITICAL"
+    else:
+        log_level = "INFO"
+
+    # Configure logging *before* doing anything else
+    logging.config.dictConfig(generate_config(level=log_level))
+
+    log = logging.getLogger(__name__)  # Get logger *after* config
+    log.debug("Verbose logging enabled.")
+
     if args.command is None:
         # If no command (e.g., just `python -m mastodon_finder`), default to 'run'
         # and re-parse to apply 'run's arguments

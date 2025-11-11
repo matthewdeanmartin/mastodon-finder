@@ -263,21 +263,20 @@ def load_settings(cli_args: "argparse.Namespace") -> Settings:
     4. CLI arguments
     """
     try:
-        # 1. Load defaults and .env file
-        settings = Settings()
-
-        # 2. Load finder.toml
+        # 1. Load finder.toml config as a dict
         toml_config = load_toml_config()
 
-        # 3. Merge TOML config into settings
-        #    Pydantic's model_copy(update=...) does a deep merge
-        if toml_config:
-            settings = settings.model_copy(update=toml_config, deep=True)
+        # 2. Initialize Settings object, passing the toml_config dict directly.
+        #    Pydantic will correctly parse the nested dictionaries
+        #    (like 'discovery' and 'limits') into their respective models.
+        #    Defaults from the models will be used for any missing keys.
+        settings = Settings(**toml_config)
 
-        # 4. Merge CLI arguments
+        # 3. Merge CLI arguments (this part is correct)
+        #    This will override TOML settings and defaults
         merge_cli_args(settings, cli_args)
 
-        # 5. Run final validation (e.g., check API keys)
+        # 4. Run final validation (e.g., check API keys)
         settings.validate_api_keys()
 
         return settings

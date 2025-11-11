@@ -47,7 +47,7 @@ def generate_config(level: str = "DEBUG") -> dict[str, Any]:
             },
         },
         "loggers": {
-            "bash2gitlab": {
+            "mastodon_finder": {
                 "handlers": ["default"],
                 "level": level,
                 "propagate": False,

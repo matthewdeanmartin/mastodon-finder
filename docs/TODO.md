@@ -1,10 +1,12 @@
 # TODO
 
+## Bugs
+
+- dry run doesn't seem to work
+- unnecessarily slow
+
 ## Prefilters
 
-- check for content flood
-  - retweet flood (ok)
-  - original content flood (many not okay), e.g. 50,000 posts
 - check for foreign language
   - not using library?
   - LLM has to many questions in rubric and ignores language?
