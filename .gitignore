@@ -208,3 +208,9 @@ __marimo__/
 .idea
 .cache_me
 
+/.build_history/bandit
+/.build_history/black
+/.build_history/isort
+/junit.xml
+/.build_history/pre-commit
+/SOURCE.md

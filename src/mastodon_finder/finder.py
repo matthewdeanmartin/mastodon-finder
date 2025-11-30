@@ -298,9 +298,14 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         "init", help="Create a default 'finder.toml' config file."
     )
 
-    # --- 'auth' command ---  <-- ADD THIS BLOCK
+    # --- 'auth' command ---
     _parser_auth = subparsers.add_parser(
         "auth", help="Run interactive auth flow to get Mastodon API keys."
+    )
+
+    # --- 'llm-auth' command ---
+    _parser_llm_auth = subparsers.add_parser(
+        "llm-auth", help="Run interactive auth flow to get LLM API keys."
     )
 
     # --- 'run' command ---
@@ -447,7 +452,14 @@ def main():
         create_default_config()
         sys.exit(0)
 
-    # --- Handle 'auth' command ---  <-- ADD THIS BLOCK
+    # --- Handle 'llm-auth' command ---
+    if args.command == "llm-auth":
+        import mastodon_finder.llm_auth
+
+        mastodon_finder.llm_auth.run_llm_auth_flow()
+        sys.exit(0)
+
+    # --- Handle 'auth' command ---
     if args.command == "auth":
         # Import dynamically to avoid circular dependencies
         # and keep auth logic separate

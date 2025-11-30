@@ -180,7 +180,7 @@ core_all_tests:
 	uv sync
 
 update_dev_status:
-	python -m mastodon_finder update .
+	troml-dev-status update .
 
 dog_food:
 	mastodon-finder validate .

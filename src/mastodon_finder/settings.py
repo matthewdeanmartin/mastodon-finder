@@ -112,14 +112,14 @@ class Settings(BaseModel):
 
     # --- Computed Properties ---
     @property
-    def llm_enabled(self) -> bool:  # <-- ADD THIS HELPER
+    def llm_enabled(self) -> bool:
         """Returns True if LLM is enabled and not a dry run."""
         if self.dry_run:
             return True  # Dry run still needs to build prompts
         return self.llm.enable
 
     @property
-    def llm_really_disabled(self) -> bool:  # <-- ADD THIS HELPER
+    def llm_really_disabled(self) -> bool:
         """Returns True if LLM is fully disabled (not just dry run)."""
         return not self.llm.enable
 
