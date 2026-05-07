@@ -97,7 +97,16 @@ dev = [
     "linkcheckmd>=1.4.0; python_version >= '3.8'",
     "codespell>=2.2.6; python_version >= '3.8'",
     "pyenchant>=3.2.2; python_version >= '3.8'",
-    "troml-dev-status; python_version >= '3.9'"
+    "troml-dev-status>=0.6.0; python_version >= '3.9'",
+    # extras
+    "rich",
+    "pandas",
+    "requests",
+    "beautifulsoup4",
+    "stravalib",
+    "pyarrow",
+    "fastparquet",
+    "openpyxl"
 ]
 
 [project.urls]
