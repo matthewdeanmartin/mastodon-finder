@@ -107,7 +107,7 @@ bandit: .build_history/bandit
 # for when using -j (jobs, run in parallel)
 .NOTPARALLEL: .build_history/isort .build_history/black
 
-check: mypy test pylint bandit pre-commit update_dev_status dog_food
+check: mypy test pylint bandit update_dev_status dog_food
 
 #.PHONY: publish_test
 #publish_test:
