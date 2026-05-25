@@ -158,3 +158,6 @@ plugins = "pydantic.mypy"
 mode = "application"  # or "library"
 use_ai = true
 
+
+[tool.uv]
+universal = true
