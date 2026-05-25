@@ -160,4 +160,6 @@ use_ai = true
 
 
 [tool.uv]
+
+[tool.uv.pip]
 universal = true
