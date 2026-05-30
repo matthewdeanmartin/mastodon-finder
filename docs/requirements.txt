@@ -1,0 +1,11 @@
+mkdocs
+mkdocs-get-deps
+
+# themes
+mkdocs-material
+mkdocs-material-extensions
+
+# tools
+mkdocs-print-site-plugin
+pymdown-extensions>=10.16.1
+idna>=3.15

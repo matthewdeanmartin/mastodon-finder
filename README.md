@@ -205,4 +205,12 @@ Bad profile search and bad search has been touted as an intentional privacy feat
 - [Trunk](https://communitywiki.org/trunk)
 - [Fedi.Directory](https://fedi.directory/)
 
-- [Just a bunch of sheets](https://researchbuzz.me/2022/11/05/a-big-list-of-mastodon-resources/) 
+- [Just a bunch of sheets](https://researchbuzz.me/2022/11/05/a-big-list-of-mastodon-resources/)
+
+## Project Links
+
+- [GitHub](https://github.com/matthewdeanmartin/mastodon-finder)
+- [PyPI](https://pypi.org/project/mastodon-finder/)
+- [Documentation](https://mastodon-finder.readthedocs.io/en/latest/)
+- [Bug Tracker](https://github.com/matthewdeanmartin/mastodon-finder/issues)
+- [Change Log](https://github.com/matthewdeanmartin/mastodon-finder/blob/main/CHANGELOG.md)

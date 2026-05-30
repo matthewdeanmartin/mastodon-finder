@@ -1,9 +1,9 @@
-site_name: "mastodon_finder"
+site_name: "mastodon-finder"
 site_url: "https://mastodon-finder.readthedocs.io/"
 site_author: "Matthew Dean Martin <matthewdeanmartin@gmail.com>"
-site_description: "Documentation of mastodon_finder, a tool for inferring the trove classifier for development status."
+site_description: "Mastodon account discovery, enrichment, and LLM-based scoring tool."
 
-repo_url: "https://github.com/matthewdeanmartin/mastodon_finder"
+repo_url: "https://github.com/matthewdeanmartin/mastodon-finder"
 
 theme:
   name: readthedocs
@@ -19,13 +19,5 @@ markdown_extensions:
       permalink: true
 
 nav:
-    - 'Home': 'index.md'
-    - 'Installation': 'installation.md'
-    - 'Usage': 'usage.md'
-    - 'Core Concepts': 'concepts.md'
-    - 'The Rubric (All Checks)': 'rubric.md'
-    - 'How Status is Determined': 'status_mapping.md'
-    - 'Using as a Library': 'library_api.md'
-    - 'Prior Art': 'prior_art.md'
-    - 'Reference':
-        - 'Full PEP': 'PEP.md'
+  - 'Home': 'index.md'
+  - 'Change Log': '../CHANGELOG.md'
