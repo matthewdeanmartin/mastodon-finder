@@ -92,6 +92,12 @@ dev = [
     "hypothesis[cli]; python_version >= '3.8'",
     "detect-test-pollution",
     "pytest-timeout>=2.4.0",
+    # Mock Mastodon server (published on PyPI) — lets test_integration/ run the
+    # finder's real Mastodon.py client against a local HTTP server instead of a
+    # live instance. The [test] extra adds the zero-boilerplate fixtures /
+    # MockServer helper. Requires Python >=3.13; the integration suite self-skips
+    # otherwise.
+    "mastodon_mock[test]; python_version >= '3.13'",
     # docs
     "interrogate>=1.5.0; python_version >= '3.8'",
     "pydoctest==0.2.1; python_version >= '3.8'",

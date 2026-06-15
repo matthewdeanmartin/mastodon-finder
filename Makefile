@@ -45,6 +45,13 @@ test: clean uv.lock install_plugins
 	$(VENV) bash ./scripts/basic_checks.sh
 #   $(VENV) bash basic_test_with_logging.sh
 
+# The finder's real Mastodon client driven against the local mastodon_mock
+# server (no live instance, no API keys). Self-skips on Python <3.13 or if
+# mastodon_mock isn't installed. See test_integration/README.md.
+test-integration: uv.lock
+	@echo "Running mastodon_mock-backed integration tests"
+	$(VENV) pytest test_integration -vv --timeout=30
+
 
 .build_history:
 	@mkdir -p .build_history
