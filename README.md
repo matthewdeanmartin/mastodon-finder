@@ -76,8 +76,38 @@ Commands:
 * `init` — write a starter `finder.toml` with reasonable defaults.
 * `auth` — run interactive OAuth flow and append creds into `.env`.
 * `run` (default) — perform discovery → enrichment → filter → (optional) LLM → report.
+* `find-nice` — same pipeline as `run`, but the LLM evaluates whether each candidate is
+  a nice *person* (real human, positive sentiment, replies to others) rather than
+  whether they are on-topic. See [`spec/find_nice_people.md`](spec/find_nice_people.md).
 
 If you run without a subcommand, it defaults to `run`.
+
+## Two evaluation modes
+
+The same discovery sources and mechanical pre-LLM filters drive two different LLM rubrics:
+
+* **`topic` mode** (default) — "Is this account on-topic for `llm.topics`?"
+* **`nice` mode** — "Is the person behind this account a real human, generally
+  positive in tone, and someone who actually replies to others?" Topic is ignored.
+
+Select nice mode any of these ways (equivalent):
+
+```bash
+mastodon-finder find-nice --yes
+mastodon-finder run --nice --yes
+mastodon-finder run --mode nice --yes
+# or in finder.toml:  [evaluation]\n mode = "nice"
+```
+
+A typical nice-people run finds candidates by who they follow, then keeps only the
+ones who read as friendly humans:
+
+```bash
+mastodon-finder find-nice \
+  --follow-targets "@coolconnector@mastodon.social" \
+  --follow-target-limit 500 \
+  --yes
+```
 
 
 ## Pipeline

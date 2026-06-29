@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 import tomli
 from pydantic import BaseModel, Field, ValidationError
@@ -76,6 +76,12 @@ class FilterConfig(BaseModel):
     min_account_age_days: int = Field(default=30, ge=0)
 
 
+class EvaluationConfig(BaseModel):
+    # "topic" = the original on-topic rubric.
+    # "nice"  = the find-nice-people rubric (person / sentiment / replies).
+    mode: Literal["topic", "nice"] = Field(default="topic")
+
+
 class LLMConfig(BaseModel):
     enable: bool = Field(default=True)
     topics: List[str] = Field(default=[])
@@ -101,6 +107,7 @@ class Settings(BaseModel):
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     limits: LimitsConfig = Field(default_factory=LimitsConfig)
     filters: FilterConfig = Field(default_factory=FilterConfig)
+    evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
 
     # From CLI (no defaults, they are None)
@@ -237,6 +244,10 @@ def merge_cli_args(settings: Settings, cli_args: "argparse.Namespace") -> None:
         settings.filters.friend_full_up.min_follow_back_ratio = (
             cli_args.min_follow_back_ratio
         )
+
+    # --- Evaluation ---
+    if getattr(cli_args, "mode", None) is not None:
+        settings.evaluation.mode = cli_args.mode
 
     # --- LLM ---
     if cli_args.topics is not None:

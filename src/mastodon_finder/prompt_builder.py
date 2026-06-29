@@ -8,13 +8,14 @@ from mastodon_finder.enrich import AccountDossier
 from mastodon_finder.settings import Settings
 
 
-def build_prompt(
-    dossier: AccountDossier,
-    settings: Settings,
-) -> Tuple[str, str]:
+def build_user_sections(dossier: AccountDossier) -> str:
     """
-    Converts an AccountDossier into system and user prompts
-    for the LLM, as per Spec 4.5 and 5.
+    Builds the shared [ACCOUNT] / [BIO] / [FIELDS] / [RECENT ORIGINAL POSTS]
+    user-data prompt from a dossier.
+
+    This is the data-only portion of the prompt; it is rubric-independent and is
+    reused by both the topic-mode and nice-mode prompt builders so they never drift
+    apart on how account data is presented.
     """
 
     # --- [USER DATA] Section ---
@@ -58,6 +59,20 @@ def build_prompt(
     else:
         post_lines.append("No recent original posts found.")
 
+    return "\n".join(account_lines + bio_lines + field_lines + post_lines)
+
+
+def build_prompt(
+    dossier: AccountDossier,
+    settings: Settings,
+) -> Tuple[str, str]:
+    """
+    Converts an AccountDossier into system and user prompts
+    for the LLM (topic mode), as per Spec 4.5 and 5.
+    """
+
+    user_prompt = build_user_sections(dossier)
+
     # --- [SYSTEM PROMPT / RUBRIC] Section ---
     # --- Use settings object ---
     topics_str = ", ".join(settings.llm.topics)
@@ -96,8 +111,6 @@ def build_prompt(
         ]
     )
 
-    # Combine all parts
-    user_prompt = "\n".join(account_lines + bio_lines + field_lines + post_lines)
     system_prompt = "\n".join(rubric_lines)
 
     return system_prompt, user_prompt

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New "find nice people" evaluation workflow. Discovery and mechanical filters are
+  unchanged, but the LLM rubric judges candidates on whether they are a real person
+  (not an org/bot), have generally positive sentiment, and reply to others — instead
+  of topic relevance. Select with `mastodon-finder find-nice`, `run --nice`,
+  `run --mode nice`, or `[evaluation] mode = "nice"` in `finder.toml`. The original
+  topic-based workflow remains the default. See `spec/find_nice_people.md`.
+
 ## [0.3.0] - 2025-11-11
 
 ### Added

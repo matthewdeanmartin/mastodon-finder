@@ -95,8 +95,17 @@ max_followers = 5000
 min_follow_back_ratio = 0.25
 
 
+[evaluation]
+# How the LLM judges each candidate:
+#   "topic" = the classic on-topic rubric (uses [llm] topics below).
+#   "nice"  = the "find nice people" rubric, which ignores topic and instead scores
+#             whether the account is a real person, has positive sentiment, and
+#             replies to others. (Equivalent to `mastodon-finder find-nice`.)
+# mode = "topic"
+
+
 [llm]
-# Topics to include in the LLM rubric
+# Topics to include in the LLM rubric (topic mode only)
 # topics = ["software developer, software engineer"]
 
 # Default OpenAI model to use if OpenRouter is not configured

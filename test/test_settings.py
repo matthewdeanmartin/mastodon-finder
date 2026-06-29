@@ -183,3 +183,44 @@ def test_computed_property_llm_enabled():
     assert settings.llm_enabled is True
     # But llm_really_disabled should be True
     assert settings.llm_really_disabled is True
+
+
+# --- Evaluation mode (find-nice workflow) ---
+
+
+def test_evaluation_mode_defaults_to_topic():
+    assert Settings().evaluation.mode == "topic"
+
+
+def test_evaluation_mode_from_toml():
+    settings = Settings(**{"evaluation": {"mode": "nice"}})
+    assert settings.evaluation.mode == "nice"
+
+
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        (["run"], "topic"),  # default, no override
+        (["run", "--mode", "nice"], "nice"),
+        (["run", "--nice"], "nice"),
+        (["run", "--topic"], "topic"),
+    ],
+)
+def test_evaluation_mode_cli_override(argv, expected):
+    from mastodon_finder.finder import setup_arg_parser
+    from mastodon_finder.settings import merge_cli_args
+
+    args = setup_arg_parser().parse_args(argv)
+    settings = Settings()
+    merge_cli_args(settings, args)
+    assert settings.evaluation.mode == expected
+
+
+def test_cli_mode_overrides_toml():
+    from mastodon_finder.finder import setup_arg_parser
+    from mastodon_finder.settings import merge_cli_args
+
+    args = setup_arg_parser().parse_args(["run", "--topic"])
+    settings = Settings(**{"evaluation": {"mode": "nice"}})
+    merge_cli_args(settings, args)
+    assert settings.evaluation.mode == "topic"

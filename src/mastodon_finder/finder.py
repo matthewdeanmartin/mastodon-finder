@@ -16,6 +16,7 @@ import mastodon_finder.discovery as discovery
 import mastodon_finder.enrich as enrich
 import mastodon_finder.llm_runner as llm_runner
 import mastodon_finder.mastodon_client as mastodon_client
+import mastodon_finder.nice_prompt_builder as nice_prompt_builder
 import mastodon_finder.prompt_builder as prompt_builder
 import mastodon_finder.report as report
 from mastodon_finder.__about__ import __version__
@@ -226,6 +227,15 @@ def _confirm_run_settings(settings: Settings):
     rprint(f"- Profile Hashtags: {settings.discovery.profile_hashtags}")
     rprint(f"- Follow Targets: {settings.discovery.follow_targets}")
 
+    # Evaluation mode
+    if settings.evaluation.mode == "nice":
+        rprint(
+            "\n[bold]Evaluation Mode:[/bold] [magenta]nice[/magenta] "
+            "(person / sentiment / replies — topic ignored)"
+        )
+    else:
+        rprint("\n[bold]Evaluation Mode:[/bold] topic")
+
     # LLM
     rprint(f"\n[bold]LLM Topics:[/bold] {settings.llm.topics}")
     rprint(
@@ -312,6 +322,15 @@ def setup_arg_parser() -> argparse.ArgumentParser:
     parser_run = subparsers.add_parser(
         "run", help="Run the discovery tool (default command)."
     )
+
+    # --- 'find-nice' command ---
+    # Same pipeline as 'run', but forces the "nice people" evaluation rubric.
+    parser_find_nice = subparsers.add_parser(
+        "find-nice",
+        help="Run discovery and evaluate candidates as nice people "
+        "(person/sentiment/replies) instead of by topic.",
+    )
+
     # Make 'run' the default
     # --- Check if a command was given. If not, default to 'run'.
     # This is a bit more robust than parser.set_defaults
@@ -319,8 +338,20 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         sys.argv.append("run")
     # parser.set_defaults(command="run") # This can be tricky with subparsers
 
-    # --- Arguments for 'run' command ---
-    # Set all defaults to None so we can detect if they were set
+    # --- Arguments shared by 'run' and 'find-nice' ---
+    # find-nice forces mode="nice" after parsing; otherwise the two are identical.
+    add_run_arguments(parser_run)
+    add_run_arguments(parser_find_nice)
+
+    return parser
+
+
+def add_run_arguments(parser_run: argparse.ArgumentParser) -> None:
+    """Adds the shared 'run'/'find-nice' arguments to a subparser.
+
+    All defaults are None so we can detect which were explicitly set on the CLI and
+    only those override finder.toml / built-in defaults.
+    """
     parser_run.add_argument("--keywords", nargs="+", default=None)
     parser_run.add_argument("--hashtags", nargs="+", default=None)
     parser_run.add_argument("--profile-keywords", nargs="+", default=None)
@@ -332,6 +363,31 @@ def setup_arg_parser() -> argparse.ArgumentParser:
     parser_run.add_argument("--max-statuses", type=int, default=None)
     parser_run.add_argument("--max-pages", type=int, default=None)
     parser_run.add_argument("--since-days", type=int, default=None)
+
+    # Evaluation mode
+    parser_run.add_argument(
+        "--mode",
+        dest="mode",
+        choices=["topic", "nice"],
+        default=None,
+        help="Evaluation rubric: 'topic' (on-topic) or 'nice' (person/sentiment/replies).",
+    )
+    parser_run.add_argument(
+        "--nice",
+        dest="mode",
+        action="store_const",
+        const="nice",
+        default=None,
+        help="Shorthand for --mode nice.",
+    )
+    parser_run.add_argument(
+        "--topic",
+        dest="mode",
+        action="store_const",
+        const="topic",
+        default=None,
+        help="Shorthand for --mode topic.",
+    )
 
     # Filter Arguments
     # Use store_true/store_false with default=None
@@ -404,8 +460,6 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         help="Force enable LLM evaluation (overrides finder.toml)",
     )
 
-    return parser
-
 
 def main():
     log_level = "INFO"
@@ -468,9 +522,14 @@ def main():
         mastodon_finder.auth.run_auth_flow()
         sys.exit(0)
 
-    # --- Handle 'run' command (default) ---
+    # --- Handle 'run' / 'find-nice' command (run is default) ---
     # 1. Load, merge, and validate settings
-    if args.command == "run":
+    if args.command in ("run", "find-nice"):
+        # 'find-nice' is sugar for 'run --nice': force nice mode regardless of the
+        # toml/default, but still honor an explicit --mode/--topic if the user passed one.
+        if args.command == "find-nice" and getattr(args, "mode", None) is None:
+            args.mode = "nice"
+
         settings = load_settings(args)
 
         # 2. Confirm Run Settings (if not --yes)
@@ -553,15 +612,20 @@ def main():
             # 4. Evaluation Phase (LLM)
             results = []
             if settings.llm.enable:
+                # Pick the rubric/prompt builder for this run's evaluation mode.
+                build_prompt = (
+                    nice_prompt_builder.build_prompt
+                    if settings.evaluation.mode == "nice"
+                    else prompt_builder.build_prompt
+                )
                 log.info(
-                    f"--- Starting Evaluation Phase ({len(final_dossiers)} candidates) ---"
+                    f"--- Starting Evaluation Phase "
+                    f"({len(final_dossiers)} candidates, mode='{settings.evaluation.mode}') ---"
                 )
 
                 for dossier in final_dossiers:
                     # 4a. Build Prompt
-                    system_prompt, user_prompt = prompt_builder.build_prompt(
-                        dossier, settings
-                    )
+                    system_prompt, user_prompt = build_prompt(dossier, settings)
 
                     if settings.dry_run:
                         print(f"\n--- [DRY RUN] System Prompt for {dossier.acct} ---")
