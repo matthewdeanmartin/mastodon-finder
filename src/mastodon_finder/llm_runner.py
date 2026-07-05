@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import sys
 from dataclasses import dataclass
 from typing import Literal, Optional
 
@@ -70,6 +71,21 @@ def _initialize_llm_client(settings: Settings):
         log.warning("LLM client not initialized: No API key found. (OK for --dry-run)")
 
 
+def _safe_print(text: str) -> None:
+    """print() that never crashes on consoles with a limited encoding.
+
+    Mastodon posts routinely contain emoji; on Windows the default console encoding
+    is often cp1252, which can't encode them and would otherwise raise
+    UnicodeEncodeError and abort the whole run. Fall back to encoding via the
+    stream's own encoding with errors='replace'.
+    """
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        enc = (getattr(sys.stdout, "encoding", None)) or "utf-8"
+        sys.stdout.write(text.encode(enc, errors="replace").decode(enc) + "\n")
+
+
 # --- LLM Runner (Real) ---
 def run_llm(system_prompt: str, user_prompt: str, settings: Settings) -> str:
     """
@@ -86,11 +102,11 @@ def run_llm(system_prompt: str, user_prompt: str, settings: Settings) -> str:
     log.info(f"Calling LLM (model: {_MODEL_TO_USE})...")
 
     # Log the prompts that will be sent
-    print("\n" + "=" * 20 + " LLM SYSTEM PROMPT " + "=" * 20)
-    print(system_prompt)
-    print("\n" + "=" * 20 + " LLM USER PROMPT " + "=" * 20)
-    print(user_prompt)
-    print("=" * 62 + "\n")
+    _safe_print("\n" + "=" * 20 + " LLM SYSTEM PROMPT " + "=" * 20)
+    _safe_print(system_prompt)
+    _safe_print("\n" + "=" * 20 + " LLM USER PROMPT " + "=" * 20)
+    _safe_print(user_prompt)
+    _safe_print("=" * 62 + "\n")
 
     try:
         response = _LLM_CLIENT_SINGLETON.chat.completions.create(

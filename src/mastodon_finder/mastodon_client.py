@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, List, Optional, Set
+from urllib.parse import urlparse
 
 from mastodon import (
     Mastodon,
@@ -367,6 +368,20 @@ def lookup_account_id_by_handle(handle: str) -> Optional[int]:
     log.info(f"Resolving account ID for handle: '@{handle_no_at}'...")
     client = get_client()
 
+    # Build the set of acct strings that count as an exact match.
+    # For accounts *local* to our own instance, the API reports `acct` as the bare
+    # username (e.g. 'film_girl'), not the fully-qualified 'film_girl@our.instance'.
+    # So if the handle's domain matches our instance host, also accept the bare name.
+    acceptable = {handle_no_at}
+    if "@" in handle_no_at:
+        username, _, domain = handle_no_at.partition("@")
+        try:
+            instance_host = urlparse(client.api_base_url).netloc or client.api_base_url
+        except Exception:
+            instance_host = ""
+        if domain.lower() == instance_host.lower():
+            acceptable.add(username)
+
     try:
         # We search for the handle. resolve=True is key.
         results = client.search(
@@ -385,7 +400,7 @@ def lookup_account_id_by_handle(handle: str) -> Optional[int]:
         # Find the exact match. Search can be fuzzy.
         # acct can be 'user@server' or just 'user' if local
         for acc in accounts:
-            if acc.acct == handle_no_at:
+            if acc.acct in acceptable:
                 account_id = acc.id
                 log.info(f"Found exact match for '@{handle_no_at}': ID {account_id}")
                 _write_to_cache(key, account_id, CACHE_DIR)
