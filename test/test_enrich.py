@@ -1,7 +1,7 @@
 # tests/test_enrich.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -23,7 +23,7 @@ def mock_api_account() -> Mock:
     mock.followers_count = 100
     mock.following_count = 50
     mock.statuses_count = 200
-    mock.created_at = datetime(2022, 1, 1, tzinfo=timezone.utc)
+    mock.created_at = datetime(2022, 1, 1, tzinfo=UTC)
     mock.note = (
         "<p>This is my bio.</p> Check my <a href='https.example.com'>website</a>."
     )
@@ -43,21 +43,21 @@ def mock_api_statuses() -> list[Mock]:
     status_1.id = 1001
     status_1.in_reply_to_id = None
     status_1.content = "<p>This is an original post about Python.</p>"
-    status_1.created_at = datetime(2023, 10, 2, tzinfo=timezone.utc)
+    status_1.created_at = datetime(2023, 10, 2, tzinfo=UTC)
 
     # 2. A reply (should be skipped)
     status_2 = Mock()
     status_2.id = 1002
     status_2.in_reply_to_id = 999  # Not None
     status_2.content = "This is a reply."
-    status_2.created_at = datetime(2023, 10, 1, tzinfo=timezone.utc)
+    status_2.created_at = datetime(2023, 10, 1, tzinfo=UTC)
 
     # 3. Another original post (for langdetect exception)
     status_3 = Mock()
     status_3.id = 1003
     status_3.in_reply_to_id = None
     status_3.content = "Short"  # This will fail langdetect
-    status_3.created_at = datetime(2023, 9, 30, tzinfo=timezone.utc)
+    status_3.created_at = datetime(2023, 9, 30, tzinfo=UTC)
 
     return [status_1, status_2, status_3]
 

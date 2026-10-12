@@ -193,7 +193,7 @@ def test_evaluation_mode_defaults_to_topic():
 
 
 def test_evaluation_mode_from_toml():
-    settings = Settings(**{"evaluation": {"mode": "nice"}})
+    settings = Settings(evaluation={"mode": "nice"})
     assert settings.evaluation.mode == "nice"
 
 
@@ -221,6 +221,6 @@ def test_cli_mode_overrides_toml():
     from mastodon_finder.settings import merge_cli_args
 
     args = setup_arg_parser().parse_args(["run", "--topic"])
-    settings = Settings(**{"evaluation": {"mode": "nice"}})
+    settings = Settings(evaluation={"mode": "nice"})
     merge_cli_args(settings, args)
     assert settings.evaluation.mode == "topic"

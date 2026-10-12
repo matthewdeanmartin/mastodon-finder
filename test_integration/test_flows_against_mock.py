@@ -94,7 +94,9 @@ def test_build_dossier_marks_bot_accounts(finder_client) -> None:
     assert dossier.bot is True
 
 
-def test_dossier_separates_replies_from_original_posts(finder_client, rustacean_poster) -> None:
+def test_dossier_separates_replies_from_original_posts(
+    finder_client, rustacean_poster
+) -> None:
     """The dossier counts replies separately and keeps them out of recent_posts.
 
     Drives the finder's reply-filtering branch against statuses the mock
@@ -111,7 +113,9 @@ def test_dossier_separates_replies_from_original_posts(finder_client, rustacean_
     assert dossier is not None
     assert dossier.reply_posts_found >= 1
     # No reply text should leak into the original-posts list.
-    assert "follow-up reply" not in " ".join(text for _c, text, _l in dossier.recent_posts)
+    assert "follow-up reply" not in " ".join(
+        text for _c, text, _l in dossier.recent_posts
+    )
 
 
 def test_account_statuses_excludes_reblogs(finder_client, rustacean_poster) -> None:
@@ -123,8 +127,12 @@ def test_account_statuses_excludes_reblogs(finder_client, rustacean_poster) -> N
     py_post = rustacean_poster.account_statuses(py_id, limit=1)[0]
     rustacean_poster.status_reblog(py_post.id)
 
-    with_reblogs = mastodon_client.get_account_statuses(rust_id, limit=40, exclude_reblogs=False)
-    without_reblogs = mastodon_client.get_account_statuses(rust_id, limit=40, exclude_reblogs=True)
+    with_reblogs = mastodon_client.get_account_statuses(
+        rust_id, limit=40, exclude_reblogs=False
+    )
+    without_reblogs = mastodon_client.get_account_statuses(
+        rust_id, limit=40, exclude_reblogs=True
+    )
     assert with_reblogs is not None and without_reblogs is not None
     assert len(with_reblogs) == len(without_reblogs) + 1
     assert all(s.reblog is None for s in without_reblogs)

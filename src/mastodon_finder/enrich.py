@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 from bs4 import BeautifulSoup
 from langdetect import LangDetectException, detect
 
-import mastodon_finder.mastodon_client as mastodon_client
+from mastodon_finder import mastodon_client
 
 log = logging.getLogger(__name__)
 
@@ -28,17 +27,17 @@ class AccountDossier:
     created_at: datetime
     note_html: str
     note_text: str  # HTML stripped
-    fields: Dict[str, str]  # Profile metadata fields
-    discovered_via: List[str]
+    fields: dict[str, str]  # Profile metadata fields
+    discovered_via: list[str]
     bot: bool  # Account is marked as a bot
     reply_posts_found: int  # Number of replies in recent statuses
-    recent_posts: List[Tuple[datetime, str, Optional[str]]] = field(
+    recent_posts: list[tuple[datetime, str, str | None]] = field(
         default_factory=list
     )  # (ts, text, lang)
 
     # Helper property for filtering
     @property
-    def latest_post_date(self) -> Optional[datetime]:
+    def latest_post_date(self) -> datetime | None:
         return self.recent_posts[0][0] if self.recent_posts else None
 
 
@@ -60,8 +59,8 @@ def strip_html(html_content: str) -> str:
 
 # --- Enrichment Function ---
 def build_dossier(
-    account_id: int, discovery_reasons: List[str], max_statuses: int
-) -> Optional[AccountDossier]:
+    account_id: int, discovery_reasons: list[str], max_statuses: int
+) -> AccountDossier | None:
     """
     Fetches full account and status info to build a dossier.
     """
@@ -136,8 +135,8 @@ def build_dossier(
 
 
 def build_dossiers(
-    candidates: Dict[int, List[str]], max_statuses: int, max_accounts: int
-) -> List[AccountDossier]:
+    candidates: dict[int, list[str]], max_statuses: int, max_accounts: int
+) -> list[AccountDossier]:
     """Builds dossiers for all candidates, up to a limit."""
     dossiers = []
 

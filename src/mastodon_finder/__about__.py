@@ -1,14 +1,14 @@
 """Metadata for mastodon-finder."""
 
 __all__ = [
-    "__title__",
-    "__version__",
-    "__keywords__",
-    "__description__",
-    "__readme__",
     "__credits__",
+    "__description__",
+    "__keywords__",
+    "__readme__",
     "__requires_python__",
     "__status__",
+    "__title__",
+    "__version__",
 ]
 
 __title__ = "mastodon-finder"

@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, List, Optional, Set
+from typing import Any
 from urllib.parse import urlparse
 
 from mastodon import (
@@ -45,7 +45,7 @@ def _get_cache_key(func_name: str, *args: Any, **kwargs: Any) -> str:
     return hashlib.md5(key_str.encode()).hexdigest()
 
 
-def _get_from_cache(key: str, cache_dir: Path) -> Optional[Any]:
+def _get_from_cache(key: str, cache_dir: Path) -> Any | None:
     """Reads a result from the specified file system cache using pickle."""
     if not CACHE_ENABLED:
         return None
@@ -111,10 +111,10 @@ def _clean_old_cache_files(max_age_days: int = 5):
 
 # --- Client Initialization ---
 # Use a global variable to hold the singleton.
-_CLIENT_SINGLETON: Optional[Mastodon] = None
+_CLIENT_SINGLETON: Mastodon | None = None
 
 
-def get_client(settings: Optional[Settings] = None) -> Mastodon:
+def get_client(settings: Settings | None = None) -> Mastodon:
     """
     Initializes and returns a singleton Mastodon client.
     The 'settings' object must be provided on the first call.
@@ -169,7 +169,7 @@ def _fetch_paginated_results(
     page_limit: int,  # Page size
     max_pages: int,
     **kwargs,
-) -> List[dict]:
+) -> list[dict]:
     """Generic helper to walk timeline/search pages."""
     all_results = []
     # Get the initialized client. This is the first point
@@ -199,7 +199,7 @@ def _fetch_paginated_results(
 
 # --- Function to get user's own ID ---
 @lru_cache(maxsize=1)
-def _get_my_account_id() -> Optional[int]:
+def _get_my_account_id() -> int | None:
     """
     Fetches the authenticated user's account ID.
     Caches the result.
@@ -221,7 +221,7 @@ def _get_my_account_id() -> Optional[int]:
 
 
 # --- Function to get following list ---
-def get_my_following_ids() -> Set[int]:
+def get_my_following_ids() -> set[int]:
     """
     Fetches the set of account IDs the user currently follows.
     """
@@ -264,7 +264,7 @@ def get_my_following_ids() -> Set[int]:
 # --- API Functions (from Spec) ---
 
 
-def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[Any]:
+def search_statuses_by_keyword(keyword: str, max_pages: int) -> list[Any]:
     """
     Searches for statuses matching a keyword.
     Uses search(result_type="statuses") as per cheat sheet.
@@ -289,7 +289,9 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[Any]:
 
     try:
         results = client.search(
-            q=keyword, result_type="statuses", resolve=True  # Attempt federated lookup
+            q=keyword,
+            result_type="statuses",
+            resolve=True,  # Attempt federated lookup
         )
         # The search result is a dict: {'accounts': [], 'statuses': [], 'hashtags': []}
         data = results.get("statuses", [])
@@ -300,7 +302,7 @@ def search_statuses_by_keyword(keyword: str, max_pages: int) -> List[Any]:
         return []
 
 
-def search_statuses_by_hashtag(tag: str, max_pages: int, page_size: int) -> List[Any]:
+def search_statuses_by_hashtag(tag: str, max_pages: int, page_size: int) -> list[Any]:
     """
     Fetches statuses for a specific hashtag timeline.
     Uses timeline("tag/...") as per cheat sheet.
@@ -324,7 +326,7 @@ def search_statuses_by_hashtag(tag: str, max_pages: int, page_size: int) -> List
     return data
 
 
-def search_accounts_by_keyword(keyword: str) -> List[Any]:
+def search_accounts_by_keyword(keyword: str) -> list[Any]:
     """
     Searches for accounts matching a keyword in their profile.
     Uses search(result_type="accounts").
@@ -341,7 +343,9 @@ def search_accounts_by_keyword(keyword: str) -> List[Any]:
 
     try:
         results = client.search(
-            q=keyword, result_type="accounts", resolve=True  # Attempt federated lookup
+            q=keyword,
+            result_type="accounts",
+            resolve=True,  # Attempt federated lookup
         )
         # The search result is a dict: {'accounts': [], 'statuses': [], 'hashtags': []}
         data = results.get("accounts", [])
@@ -352,7 +356,7 @@ def search_accounts_by_keyword(keyword: str) -> List[Any]:
         return []
 
 
-def lookup_account_id_by_handle(handle: str) -> Optional[int]:
+def lookup_account_id_by_handle(handle: str) -> int | None:
     """
     Resolves a Mastodon handle (e.g., @user@server) to an account ID.
     Caches the result.
@@ -427,7 +431,7 @@ def lookup_account_id_by_handle(handle: str) -> Optional[int]:
         return None
 
 
-def get_account_followers(account_id: int, max_followers: int) -> List[Any]:
+def get_account_followers(account_id: int, max_followers: int) -> list[Any]:
     """
     Fetches the followers of a given account, up to max_followers.
     If max_followers is -1, fetches all.
@@ -473,7 +477,7 @@ def get_account_followers(account_id: int, max_followers: int) -> List[Any]:
     return all_results
 
 
-def get_account(account_id: int) -> Optional[Any]:
+def get_account(account_id: int) -> Any | None:
     """
     Gets the full, canonical account info.
     """
@@ -495,7 +499,7 @@ def get_account(account_id: int) -> Optional[Any]:
 
 def get_account_statuses(
     account_id: int, limit: int, exclude_reblogs: bool = True
-) -> Optional[List[Any]]:
+) -> list[Any] | None:
     """
     Gets recent statuses, excluding reblogs as specified.
     """

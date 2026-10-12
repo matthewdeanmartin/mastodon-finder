@@ -8,12 +8,12 @@ import os
 from typing import Any
 
 try:
-    import colorlog  # noqa
+    import colorlog
 
     # This is only here so that I can see if colorlog is installed
     # and to keep autofixers from removing an "unused import"
     if False:  # pylint: disable=using-constant-test
-        assert colorlog  # noqa # nosec
+        assert colorlog  # nosec
     colorlog_available = True
 except ImportError:  # no qa
     colorlog_available = False

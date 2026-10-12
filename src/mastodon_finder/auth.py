@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 from mastodon import Mastodon
 from mastodon.Mastodon import MastodonError
@@ -76,7 +75,7 @@ def run_auth_flow():
     """
     Runs the full interactive OAuth flow to get and save user credentials.
     """
-    client: Optional[Mastodon] = None
+    client: Mastodon | None = None
     api_base_url = ""
 
     try:

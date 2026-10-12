@@ -7,14 +7,12 @@ readme = "README.md"
 authors = [
     { name = "Matthew Dean Martin", email = "matthewdeanmartin@gmail.com" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Framework :: Pydantic",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.14",
@@ -47,16 +45,16 @@ dependencies = [
 [dependency-groups]
 dev = [
     "jiggle-version>=2.1.0",
-    "dont-be-lazy>=0.1.2; python_version >= '3.10'",
-    "pydoc-fork>=3.0.0; python_version >= '3.10'",
+    "dont-be-lazy>=0.1.2",
+    "pydoc-fork>=3.0.0",
 
     "pip-licenses",
     #    "toml-formatter",
     "bitrab",
     "types-PyYAML",
-    "troml;python_version>='3.11'",
+    "troml",
     "cli-tool-audit",
-    "git2md; python_version >= '3.10'",
+    "git2md",
     "pyclean; python_version >= '3.12'",
     "strip-docs>=1.0; python_version >= '3.12'",
     "gha-update; python_version >= '3.12'",
@@ -64,32 +62,32 @@ dev = [
     "mkdocs<2; python_version >= '3.12'",
     "mdformat",
     # plugin finder
-    "packaging; python_version >= '3.8'",
+    "packaging",
     # mpy
     "types-retry",
     "types-Markdown",
-    "mypy; python_version >= '3.8'",
-    "types-toml; python_version >= '3.8'",
+    "mypy",
+    "types-toml",
     # reports
 
     # build
-    "vermin; python_version >= '3.8'",
-    "metametameta>=0.1.3; python_version >= '3.9'",
-    "hatchling; python_version >= '3.8'",
-    "ruff>=0.12.0; python_version >= '3.8'",
-    "pylint; python_version >= '3.8'",
-    "bandit; python_version >= '3.8'",
+    "vermin",
+    "metametameta>=0.1.3",
+    "hatchling",
+    "ruff>=0.12.0",
+    "pylint",
+    "bandit",
     "bandit>=1.8.6; python_version >= '3.14'",
-    "pre-commit; python_version >= '3.8'",
+    "pre-commit",
     # testing tools
-    "pytest; python_version >= '3.8'",
-    "pytest-cov; python_version >= '3.8'",
-    "pytest-xdist>=3.5.0; python_version >= '3.8'",
-    "pytest-randomly>=3.15.0; python_version >= '3.8'",
-    "pytest-sugar>=0.9.7; python_version >= '3.8'",
-    "pytest-mock; python_version >= '3.8'",
-    # "pytest-unused-whichfixtures; python_version >= '3.10'",
-    "hypothesis[cli]; python_version >= '3.8'",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist>=3.5.0",
+    "pytest-randomly>=3.15.0",
+    "pytest-sugar>=0.9.7",
+    "pytest-mock",
+    # "pytest-unused-whichfixtures",
+    "hypothesis[cli]",
     "detect-test-pollution",
     "pytest-timeout>=2.4.0",
     # Mock Mastodon server (published on PyPI) — lets test_integration/ run the
@@ -99,14 +97,14 @@ dev = [
     # otherwise.
     "mastodon_mock[test]; python_version >= '3.13'",
     # docs
-    "interrogate>=1.5.0; python_version >= '3.8'",
-    "pydoctest==0.2.1; python_version >= '3.8'",
-    "pdoc3>=0.5.0; python_version >= '3.8'",
-    "mdformat>=0.5.0; python_version >= '3.8'",
-    "linkcheckmd>=1.4.0; python_version >= '3.8'",
-    "codespell>=2.2.6; python_version >= '3.8'",
-    "pyenchant>=3.2.2; python_version >= '3.8'",
-    "troml-dev-status>=0.6.0; python_version >= '3.9'",
+    "interrogate>=1.5.0",
+    "pydoctest==0.2.1",
+    "pdoc3>=0.5.0",
+    "mdformat>=0.5.0",
+    "linkcheckmd>=1.4.0",
+    "codespell>=2.2.6",
+    "pyenchant>=3.2.2",
+    "troml-dev-status>=0.6.0",
     # extras
     "rich",
     "pandas",
@@ -189,3 +187,6 @@ changelog = "CHANGELOG.md"
 
 [tool.uv.pip]
 universal = true
+
+[tool.ruff.lint]
+ignore = ["RUF100", "BLE001", "ISC004", "PIE810", "SIM102"]  # unused noqa differs across Python versions

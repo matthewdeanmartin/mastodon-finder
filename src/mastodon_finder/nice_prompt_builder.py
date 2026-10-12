@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
 from mastodon_finder.enrich import AccountDossier
 from mastodon_finder.prompt_builder import build_user_sections
 from mastodon_finder.settings import Settings
@@ -12,7 +10,7 @@ from mastodon_finder.settings import Settings
 def build_prompt(
     dossier: AccountDossier,
     settings: Settings,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Builds system and user prompts for the "find nice people" rubric.
 

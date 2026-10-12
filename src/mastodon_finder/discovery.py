@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Set
 
-import mastodon_finder.mastodon_client as mastodon_client
+from mastodon_finder import mastodon_client
 from mastodon_finder.settings import DiscoveryConfig, LimitsConfig
 
 log = logging.getLogger(__name__)
@@ -14,13 +13,13 @@ log = logging.getLogger(__name__)
 def discover_accounts(
     disc_config: DiscoveryConfig,
     limits_config: LimitsConfig,
-) -> Dict[int, List[str]]:
+) -> dict[int, list[str]]:
     """
     Discovers candidate accounts from keywords and hashtags.
     Returns a dict mapping {account_id: [list_of_discovery_reasons]}.
     """
     # Use a set to auto-deduplicate reasons per account
-    candidates: Dict[int, Set[str]] = {}
+    candidates: dict[int, set[str]] = {}
 
     # 1. Search by Keywords (in posts)
     for keyword in disc_config.keywords:
@@ -38,7 +37,9 @@ def discover_accounts(
     # 2. Search by Hashtags (in posts)
     for tag in disc_config.hashtags:
         statuses = mastodon_client.search_statuses_by_hashtag(
-            tag, limits_config.max_pages, 40  # 40 is the default page size
+            tag,
+            limits_config.max_pages,
+            40,  # 40 is the default page size
         )
         for status in statuses:
             try:

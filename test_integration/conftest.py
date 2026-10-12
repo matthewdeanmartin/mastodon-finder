@@ -35,16 +35,11 @@ pytest.importorskip(
     reason="install mastodon_mock[test] to run these tests",
 )
 
-from mastodon_mock.config import (  # noqa: E402
-    SeedAccount,
-    SeedConfig,
-    SeedFollow,
-    SeedStatus,
-)
-from mastodon_mock.testing import MockServer  # noqa: E402
+from mastodon_mock.config import SeedAccount, SeedConfig, SeedFollow, SeedStatus
+from mastodon_mock.testing import MockServer
 
-from mastodon_finder import mastodon_client  # noqa: E402
-from mastodon_finder.settings import Settings  # noqa: E402
+from mastodon_finder import mastodon_client
+from mastodon_finder.settings import Settings
 
 # The token the finder authenticates with (the "me" account doing the searching).
 ME_TOKEN = "finder_token"
@@ -58,8 +53,15 @@ INTEGRATION_SEED = SeedConfig(
     accounts=[
         SeedAccount(username="me", display_name="The Finder", access_token=ME_TOKEN),
         # rustacean carries a token so reply/reblog-filtering tests can post as it.
-        SeedAccount(username="rustacean", display_name="Rusty Dev", note="I write Rust all day", access_token="rustacean_token"),
-        SeedAccount(username="pythonista", display_name="Py Thon", note="Python and data"),
+        SeedAccount(
+            username="rustacean",
+            display_name="Rusty Dev",
+            note="I write Rust all day",
+            access_token="rustacean_token",
+        ),
+        SeedAccount(
+            username="pythonista", display_name="Py Thon", note="Python and data"
+        ),
         SeedAccount(username="follower_one", display_name="Follower One"),
         SeedAccount(username="follower_two", display_name="Follower Two"),
         SeedAccount(username="botaccount", display_name="A Bot", bot=True),
@@ -70,7 +72,10 @@ INTEGRATION_SEED = SeedConfig(
         SeedFollow(follower="me", following="pythonista"),
     ],
     statuses=[
-        SeedStatus(account="rustacean", text="shipping some #rust today, love the borrow checker"),
+        SeedStatus(
+            account="rustacean",
+            text="shipping some #rust today, love the borrow checker",
+        ),
         SeedStatus(account="rustacean", text="another post about ownership in rust"),
         SeedStatus(account="pythonista", text="a neat #python trick for dataframes"),
         SeedStatus(account="botaccount", text="beep boop #rust automated post"),
@@ -98,7 +103,9 @@ def finder_settings(mock_server_url: str) -> Settings:
 
 
 @pytest.fixture(autouse=True)
-def isolate_client_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def isolate_client_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
     """Reset all of mastodon_client's module-level state for each test.
 
     The finder keeps a singleton client, an ``lru_cache`` on the account id, and

@@ -1,7 +1,7 @@
 # tests/test_nice_prompt_builder.py
 """Tests for the "find nice people" rubric. See spec/find_nice_people.md."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -30,7 +30,7 @@ def mock_dossier() -> AccountDossier:
         followers_count=120,
         following_count=80,
         statuses_count=300,
-        created_at=datetime(2022, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2022, 1, 1, tzinfo=UTC),
         note_html="<p>Just a person who likes gardening.</p>",
         note_text="Just a person who likes gardening.",
         fields={"Pronouns": "she/her"},
@@ -39,7 +39,7 @@ def mock_dossier() -> AccountDossier:
         reply_posts_found=12,
         recent_posts=[
             (
-                datetime(2024, 5, 1, tzinfo=timezone.utc),
+                datetime(2024, 5, 1, tzinfo=UTC),
                 "Loving the spring weather!",
                 "en",
             ),

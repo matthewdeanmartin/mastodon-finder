@@ -58,7 +58,9 @@ def test_search_statuses_by_keyword_is_cached(finder_client) -> None:
 
 
 def test_search_statuses_by_hashtag_paginates(finder_client) -> None:
-    results = mastodon_client.search_statuses_by_hashtag("rust", max_pages=3, page_size=1)
+    results = mastodon_client.search_statuses_by_hashtag(
+        "rust", max_pages=3, page_size=1
+    )
     assert isinstance(results, list)
     # Two human #rust posts + one bot #rust post are seeded under the tag.
     ids = {s.id for s in results}
@@ -90,7 +92,9 @@ def test_get_account_and_statuses(finder_client) -> None:
     assert account is not None
     assert account.username == "rustacean"
 
-    statuses = mastodon_client.get_account_statuses(rust_id, limit=40, exclude_reblogs=True)
+    statuses = mastodon_client.get_account_statuses(
+        rust_id, limit=40, exclude_reblogs=True
+    )
     assert statuses is not None
     assert len(statuses) >= 2
     assert all(s.account.id == rust_id for s in statuses)

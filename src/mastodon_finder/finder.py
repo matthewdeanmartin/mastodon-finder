@@ -7,18 +7,19 @@ import logging
 import logging.config
 import re
 import sys
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Tuple
+from datetime import UTC, datetime, timedelta
 
 from rich import print as rprint
 
-import mastodon_finder.discovery as discovery
-import mastodon_finder.enrich as enrich
-import mastodon_finder.llm_runner as llm_runner
-import mastodon_finder.mastodon_client as mastodon_client
-import mastodon_finder.nice_prompt_builder as nice_prompt_builder
-import mastodon_finder.prompt_builder as prompt_builder
-import mastodon_finder.report as report
+from mastodon_finder import (
+    discovery,
+    enrich,
+    llm_runner,
+    mastodon_client,
+    nice_prompt_builder,
+    prompt_builder,
+    report,
+)
 from mastodon_finder.__about__ import __version__
 from mastodon_finder.enrich import AccountDossier
 
@@ -32,21 +33,21 @@ log = logging.getLogger(__name__)
 
 
 def _pre_llm_filter(
-    dossiers: List[AccountDossier], settings: Settings
-) -> Tuple[List[AccountDossier], Dict[str, int]]:
+    dossiers: list[AccountDossier], settings: Settings
+) -> tuple[list[AccountDossier], dict[str, int]]:
     """
     Applies all pre-LLM filtering rules based on the Settings object.
     Returns a tuple of (filtered_dossiers, discard_counts).
     """
     log.info(f"Applying pre-LLM filters to {len(dossiers)} dossiers...")
     final_dossiers = []
-    discard_counts: Dict[str, int] = {}
+    discard_counts: dict[str, int] = {}
 
     filters = settings.filters
     limits = settings.limits
 
     # 1. Activity Filter (--since-days)
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=filters.since_days)
+    cutoff_date = datetime.now(UTC) - timedelta(days=filters.since_days)
 
     for d in dossiers:
         # Filter 1: Inactivity
@@ -155,9 +156,8 @@ def _pre_llm_filter(
 
         # Filter 9: Too-Chatty Filter
         # Calculate account age in days, ensure at least 1 to avoid ZeroDivisionError
-        age_in_days = (datetime.now(timezone.utc) - d.created_at).days
-        if age_in_days < 1:
-            age_in_days = 1
+        age_in_days = (datetime.now(UTC) - d.created_at).days
+        age_in_days = max(age_in_days, 1)
 
         # Calculate average posts per year
         posts_per_year = (d.statuses_count / age_in_days) * 365.25

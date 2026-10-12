@@ -1,6 +1,6 @@
 # tests/test_prompt_builder.py
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -29,7 +29,7 @@ def mock_full_dossier() -> AccountDossier:
         followers_count=100,
         following_count=50,
         statuses_count=200,
-        created_at=datetime(2022, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2022, 1, 1, tzinfo=UTC),
         note_html="<p>This is my bio.</p>",
         note_text="This is my bio.",
         fields={"Website": "https://example.com", "GitHub": "test_user"},
@@ -38,12 +38,12 @@ def mock_full_dossier() -> AccountDossier:
         reply_posts_found=2,
         recent_posts=[
             (
-                datetime(2023, 10, 2, tzinfo=timezone.utc),
+                datetime(2023, 10, 2, tzinfo=UTC),
                 "This is the first post.",
                 "en",
             ),
             (
-                datetime(2023, 10, 1, tzinfo=timezone.utc),
+                datetime(2023, 10, 1, tzinfo=UTC),
                 "This is the second post.",
                 "en",
             ),
@@ -166,7 +166,7 @@ def test_build_prompt_user_prompt_post_truncation(
     """
     long_text = "a" * 300
     mock_full_dossier.recent_posts = [
-        (datetime(2023, 10, 1, tzinfo=timezone.utc), long_text, "en")
+        (datetime(2023, 10, 1, tzinfo=UTC), long_text, "en")
     ]
 
     _, user_prompt = build_prompt(mock_full_dossier, mock_base_settings)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
 from mastodon_finder.enrich import AccountDossier
 from mastodon_finder.settings import Settings
 
@@ -65,7 +63,7 @@ def build_user_sections(dossier: AccountDossier) -> str:
 def build_prompt(
     dossier: AccountDossier,
     settings: Settings,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Converts an AccountDossier into system and user prompts
     for the LLM (topic mode), as per Spec 4.5 and 5.

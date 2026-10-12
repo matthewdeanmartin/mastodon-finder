@@ -6,7 +6,7 @@ import logging
 import re
 import sys
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
 import openai
 
@@ -29,7 +29,7 @@ class EvaluationResult:
 
 # --- LLM Client Initialization ---
 # This will be our singleton
-_LLM_CLIENT_SINGLETON: Optional[openai.OpenAI] = None
+_LLM_CLIENT_SINGLETON: openai.OpenAI | None = None
 _MODEL_TO_USE: str = ""
 _LLM_TIMEOUT: int = 30
 _LLM_TEMPERATURE: float = 0.0
@@ -144,7 +144,7 @@ def run_llm(system_prompt: str, user_prompt: str, settings: Settings) -> str:
 
 
 # --- LLM Output Parser ---
-def parse_llm_output(dossier: "AccountDossier", output: str) -> "EvaluationResult":
+def parse_llm_output(dossier: AccountDossier, output: str) -> EvaluationResult:
     """
     Parses the plain-text LLM output into a structured result.
 

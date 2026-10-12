@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Literal
 
 import tomli
 from pydantic import BaseModel, Field, ValidationError
@@ -23,14 +23,14 @@ class EnvironmentSettings(BaseSettings):
     )
 
     # Mastodon API
-    MASTODON_BASE_URL: Optional[str] = None
-    MASTODON_ACCESS_TOKEN: Optional[str] = None
+    MASTODON_BASE_URL: str | None = None
+    MASTODON_ACCESS_TOKEN: str | None = None
 
     # LLM Settings
-    OPENROUTER_API_KEY: Optional[str] = None
-    OPENROUTER_BASE_URL: Optional[str] = None
-    OPENROUTER_MODEL: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_BASE_URL: str | None = None
+    OPENROUTER_MODEL: str | None = None
+    OPENAI_API_KEY: str | None = None
 
 
 # --- Models for TOML configuration ---
@@ -38,11 +38,11 @@ class EnvironmentSettings(BaseSettings):
 
 
 class DiscoveryConfig(BaseModel):
-    keywords: List[str] = Field(default=[])
-    hashtags: List[str] = Field(default=[])
-    profile_keywords: List[str] = Field(default=[])
-    profile_hashtags: List[str] = Field(default=[])
-    follow_targets: List[str] = Field(default=[])
+    keywords: list[str] = Field(default=[])
+    hashtags: list[str] = Field(default=[])
+    profile_keywords: list[str] = Field(default=[])
+    profile_hashtags: list[str] = Field(default=[])
+    follow_targets: list[str] = Field(default=[])
 
 
 class LimitsConfig(BaseModel):
@@ -71,7 +71,7 @@ class FilterConfig(BaseModel):
         default_factory=FriendFullUpFilterConfig
     )
     max_posts_per_year: int = Field(default=15000, gt=0)
-    reject_bio_keywords: List[str] = Field(default=[])
+    reject_bio_keywords: list[str] = Field(default=[])
     filter_no_bio: bool = Field(default=True)
     min_account_age_days: int = Field(default=30, ge=0)
 
@@ -84,7 +84,7 @@ class EvaluationConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     enable: bool = Field(default=True)
-    topics: List[str] = Field(default=[])
+    topics: list[str] = Field(default=[])
     default_openai_model: str = Field(default="gpt-4o-mini")
     temperature: float = Field(default=0, ge=0, le=2)
     timeout: int = Field(default=30, gt=0)
@@ -113,7 +113,7 @@ class Settings(BaseModel):
     # From CLI (no defaults, they are None)
     # These fields are *not* part of the TOML structure
     # They are set by the loader after merging.
-    output_file: Optional[str] = Field(default=None)
+    output_file: str | None = Field(default=None)
     dry_run: bool = Field(default=False)
     yes: bool = Field(default=False)  # For skipping confirmation
 
@@ -131,11 +131,11 @@ class Settings(BaseModel):
         return not self.llm.enable
 
     @property
-    def mastodon_base_url(self) -> Optional[str]:
+    def mastodon_base_url(self) -> str | None:
         return self.env.MASTODON_BASE_URL
 
     @property
-    def mastodon_access_token(self) -> Optional[str]:
+    def mastodon_access_token(self) -> str | None:
         return self.env.MASTODON_ACCESS_TOKEN
 
     @property
@@ -173,7 +173,7 @@ class Settings(BaseModel):
             print("         OpenRouter calls may fail.")
 
 
-def load_toml_config(config_path: str = "finder.toml") -> Dict:
+def load_toml_config(config_path: str = "finder.toml") -> dict:
     """
     Loads and parses the TOML config file if it exists.
     """
@@ -192,7 +192,7 @@ def load_toml_config(config_path: str = "finder.toml") -> Dict:
         sys.exit(1)
 
 
-def merge_cli_args(settings: Settings, cli_args: "argparse.Namespace") -> None:
+def merge_cli_args(settings: Settings, cli_args: argparse.Namespace) -> None:
     """
     Merges CLI arguments into the settings object.
     CLI arguments (if not None) override TOML and defaults.
@@ -264,7 +264,7 @@ def merge_cli_args(settings: Settings, cli_args: "argparse.Namespace") -> None:
         settings.yes = cli_args.yes
 
 
-def load_settings(cli_args: "argparse.Namespace") -> Settings:
+def load_settings(cli_args: argparse.Namespace) -> Settings:
     """
     The main function to load, merge, and validate settings.
     Order:

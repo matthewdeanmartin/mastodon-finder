@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import logging
-from typing import Dict, List
 
 from rich import print as rprint
 
@@ -32,8 +31,8 @@ DECISION_ORDER = {
 
 
 def write_report(
-    results: List[EvaluationResult],
-    discard_counts: Dict[str, int],
+    results: list[EvaluationResult],
+    discard_counts: dict[str, int],
     settings: Settings,
 ):
     """
@@ -97,7 +96,7 @@ def write_report(
             raise
 
 
-def _write_md(results: List[EvaluationResult], filename: str) -> None:
+def _write_md(results: list[EvaluationResult], filename: str) -> None:
     """Writes a Markdown report."""
     with open(filename, "w", encoding="utf-8") as f:
         f.write("# Mastodon Finder Report\n\n")
@@ -118,7 +117,7 @@ def _write_md(results: List[EvaluationResult], filename: str) -> None:
             f.write("---\n")
 
 
-def _write_csv(results: List[EvaluationResult], filename: str) -> None:
+def _write_csv(results: list[EvaluationResult], filename: str) -> None:
     """Writes a CSV report (as per Spec 2)."""
     with open(filename, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
