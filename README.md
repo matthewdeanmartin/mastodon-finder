@@ -244,3 +244,7 @@ Bad profile search and bad search has been touted as an intentional privacy feat
 - [Documentation](https://mastodon-finder.readthedocs.io/en/latest/)
 - [Bug Tracker](https://github.com/matthewdeanmartin/mastodon-finder/issues)
 - [Change Log](https://github.com/matthewdeanmartin/mastodon-finder/blob/main/CHANGELOG.md)
+
+## Python 3.15 wheel verification — 2026-10-04
+
+Strict wheels-only installation is blocked by langdetect, which only supplies source distributions in the tested resolver candidates. This also blocks Python 3.14, so it is not a Python 3.15 ABI regression. Language filtering uses this dependency; it was not silently removed. Stable locks were refreshed, but no successful RC3 suite is claimed.

@@ -61,7 +61,7 @@ dev = [
     "strip-docs>=1.0; python_version >= '3.12'",
     "gha-update; python_version >= '3.12'",
     "mkdocstrings[python]",
-    "mkdocs; python_version >= '3.12'",
+    "mkdocs<2; python_version >= '3.12'",
     "mdformat",
     # plugin finder
     "packaging; python_version >= '3.8'",
