@@ -2,6 +2,7 @@
 
 __all__ = [
     "__credits__",
+    "__dependencies__",
     "__description__",
     "__keywords__",
     "__readme__",
@@ -17,5 +18,16 @@ __keywords__ = ["mastodon"]
 __description__ = "Search for mastodon profiles, use mechanical and LLM filtering."
 __readme__ = "README.md"
 __credits__ = [{"name": "Matthew Dean Martin", "email": "matthewdeanmartin@gmail.com"}]
-__requires_python__ = ">=3.8"
+__requires_python__ = ">=3.11"
 __status__ = "4 - Beta"
+__dependencies__ = [
+    "mastodon-py>=2.1.4",
+    "python-dotenv",
+    "beautifulsoup4",
+    "openai",
+    "langdetect",
+    "rich",
+    "tomli",
+    "pydantic-settings",
+    "colorlog",
+]

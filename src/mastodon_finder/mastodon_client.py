@@ -380,7 +380,8 @@ def lookup_account_id_by_handle(handle: str) -> int | None:
     if "@" in handle_no_at:
         username, _, domain = handle_no_at.partition("@")
         try:
-            instance_host = urlparse(client.api_base_url).netloc or client.api_base_url
+            base_url = str(client.api_base_url or "")
+            instance_host = urlparse(base_url).netloc or base_url
         except Exception:
             instance_host = ""
         if domain.lower() == instance_host.lower():
