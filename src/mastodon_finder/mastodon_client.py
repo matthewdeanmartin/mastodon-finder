@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import pickle
+import pickle  # nosec B403 - only reads cache files this app wrote to its own cache dir
 import sys
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -42,7 +42,7 @@ def _get_cache_key(func_name: str, *args: Any, **kwargs: Any) -> str:
     # Use sort_keys=True for consistent hashing
     key_str = json.dumps(key_data, sort_keys=True)
     # Use md5 for a short, effective hash
-    return hashlib.md5(key_str.encode()).hexdigest()
+    return hashlib.md5(key_str.encode(), usedforsecurity=False).hexdigest()
 
 
 def _get_from_cache(key: str, cache_dir: Path) -> Any | None:
@@ -54,7 +54,7 @@ def _get_from_cache(key: str, cache_dir: Path) -> Any | None:
         log.info(f"Cache HIT for key {key} (file: {cache_file.name})")
         try:
             with open(cache_file, "rb") as f:  # Open in read-binary mode
-                return pickle.load(f)  # Use pickle.load
+                return pickle.load(f)  # nosec B301 - self-written cache file
         except (pickle.UnpicklingError, EOFError):  # Handle pickle errors
             log.warning(f"Cache file {cache_file} corrupted. Deleting.")
             cache_file.unlink()
